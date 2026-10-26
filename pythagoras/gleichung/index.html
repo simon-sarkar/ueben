@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Gleichung legen</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  .zeile { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px; min-height: 68px;
+    padding: 8px; margin: 4px 0 12px; border: 2px dashed #D9C8B4; border-radius: 12px; background: var(--bg); }
+  .vorrat { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 320px; margin: 0 auto 14px; }
+  .stein { min-width: 52px; min-height: 52px; padding: 4px 10px; border-radius: 12px; border: 2px solid var(--hue);
+    background: var(--card); color: var(--ink); font: 600 1.25em var(--kopf); cursor: pointer; touch-action: manipulation; }
+  .stein sup { font-size: .6em; }
+  .zeile .stein { min-width: 48px; padding: 4px 8px; background: var(--tint); border-color: var(--tint); }
+  .vorrat .stein.leer { visibility: hidden; }
+  .stein:disabled { cursor: default; }
+  .zeile.ok { border-style: solid; border-color: var(--ok); background: var(--okbg); }
+  .zeile.falsch { border-style: solid; border-color: var(--bad); background: var(--badbg); }
+  .hinweis-zeile { margin: -6px 0 12px; color: var(--bad); font-weight: 600; text-align: center; }
+  .blau { color: #145897; } .ocker { color: #8F6400; }
+  .gl { white-space: nowrap; font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  const TITEL = "Gleichung legen", ANZAHL = 8;
+  const BLAU = "#145897", OCKER = "#C28A12", MINUS = "−";
+  /* Buchstabengruppen mit einem passenden vierten Buchstaben als Ablenker */
+  const GRUPPEN = [["a", "b", "c", "d"], ["p", "q", "r", "s"], ["r", "s", "t", "u"], ["u", "v", "w", "x"], ["x", "y", "z", "w"],
+    ["d", "e", "f", "g"], ["e", "f", "g", "h"], ["k", "m", "n", "p"], ["m", "n", "p", "q"], ["s", "t", "u", "v"], ["g", "h", "k", "m"]];
+
+  const q2 = b => `${b}<sup>2</sup>`;
+  const steinHTML = s => s.art === "q" ? q2(s.w) : s.w;
+  const gleichungHTML = folge => `<span class="gl">${folge.map(steinHTML).join(" ")}</span>`;
+
+  function erzeuge(i, alt) {
+    let g, n = 0;
+    do { g = U.wahl(GRUPPEN); n++; } while (alt.has(g[0]) && n < 30);
+    alt.add(g[0]);
+    const [na, nb, nc] = U.mische(g.slice(0, 3)), extra = g[3];
+    const r = 1 + Math.random() * 1.2, tausch = Math.random() < 0.5;
+    const p = U.rechtwinklig(tausch ? 100 * r : 100, tausch ? 100 : 100 * r, U.ganz(0, 359), Math.random() < 0.5);
+    /* Ablenker: abwechselnd ein Minus oder ein Buchstabe, der nicht zum Dreieck gehört */
+    const ablenker = i % 2 === 0 ? { art: "q", w: extra } : { art: "o", w: MINUS };
+    const steine = U.mische([{ art: "q", w: na }, { art: "q", w: nb }, { art: "q", w: nc }, { art: "o", w: "+" }, { art: "o", w: "=" }, ablenker])
+      .map((s, k) => Object.assign(s, { id: k }));
+    /* C ist der rechte Winkel: BC = na und CA = nb sind Katheten, AB = nc ist die Hypotenuse */
+    return { p, namen: { BC: na, CA: nb, AB: nc }, kat: [na, nb], hyp: nc, extra, steine };
+  }
+
+  function svg(a, farbig) {
+    return U.dreieckSVG(a.p, a.namen, { rechterWinkel: "C", breite: 320, hoehe: 230, rand: 40, schrift: 24,
+      farben: farbig ? { AB: BLAU, BC: OCKER, CA: OCKER } : null });
+  }
+
+  /* Folge der Steine prüfen. Ergebnis: {unfertig: Text} oder {ok, text} */
+  function pruefe(folge, a) {
+    if (!folge.length) return { unfertig: "Die Zeile ist noch leer." };
+    const iq = folge.findIndex(s => s.w === "=");
+    if (iq < 0) return { unfertig: "Es fehlt noch das =." };
+    const seiten = [folge.slice(0, iq), folge.slice(iq + 1)];
+    if (!seiten[0].length || !seiten[1].length) return { unfertig: "Auf beiden Seiten vom = muss etwas stehen." };
+    const koeff = {};
+    for (let si = 0; si < 2; si++) {
+      const s = seiten[si];
+      let vz = 1, j = 0;
+      if (s[0].w === MINUS) { vz = -1; j = 1; }
+      else if (s[0].art === "o") return { unfertig: "Eine Seite beginnt mit einem Rechenzeichen." };
+      if (s[s.length - 1].art === "o") return { unfertig: "Eine Seite endet mit einem Rechenzeichen." };
+      let erwarteQ = true;
+      for (; j < s.length; j++) {
+        const t = s[j];
+        if (erwarteQ && t.art === "o") return { unfertig: "Zwei Rechenzeichen stehen nebeneinander." };
+        if (!erwarteQ && t.art === "q") return { unfertig: "Zwischen zwei Quadraten fehlt ein Rechenzeichen." };
+        if (t.art === "q") koeff[t.w] = (si === 0 ? 1 : -1) * vz;
+        else vz = t.w === MINUS ? -1 : 1;
+        erwarteQ = !erwarteQ;
+      }
+    }
+    const [k1, k2] = a.kat, h = a.hyp;
+    const minus = folge.some(s => s.w === MINUS);
+    if (koeff[a.extra]) return { ok: false, text: `${a.extra} ist keine Seite dieses Dreiecks.` };
+    if (!koeff[k1] || !koeff[k2] || !koeff[h]) return { ok: false, text: "In die Gleichung gehören alle drei Seiten." };
+    if (koeff[k1] === koeff[k2] && koeff[h] === -koeff[k1]) return { ok: true, umgestellt: minus };
+    /* Steht ein Buchstabe allein auf einer Seite? */
+    const allein = seiten.find(s => s.length === 1);
+    if (!minus && allein) return { ok: false, text: `Allein auf einer Seite steht die Hypotenuse <b class="blau">${h}</b>, nicht die Kathete <b class="ocker">${allein[0].w}</b>.` };
+    if (allein && allein[0].w === h) return { ok: false, text: "Die Quadrate der Katheten werden addiert, nicht subtrahiert." };
+    return { ok: false, text: "Das Quadrat der Hypotenuse ist die Summe der beiden Kathetenquadrate." };
+  }
+
+  const ziel = document.querySelector("#app");
+  let nr, richtig, fehler, gruppenAlt;
+
+  function start() {
+    nr = 0; richtig = 0; fehler = []; gruppenAlt = new Set();
+    zeige(); window.scrollTo(0, 0);
+  }
+  const kopf = () => `<div class="leiste"><h1>${TITEL}</h1><span class="punkte">${richtig} / ${ANZAHL}</span></div>` +
+    `<div class="balken"><i style="width:${100 * nr / ANZAHL}%"></i></div>`;
+
+  function zeige() {
+    if (nr >= ANZAHL) return ende();
+    const a = erzeuge(nr, gruppenAlt);
+    let folge = [], fertig = false;
+    ziel.innerHTML = kopf() + `<div class="karte"><div class="frage">Lege mit den Bausteinen die Gleichung für dieses Dreieck.</div>` +
+      `<div class="bildfeld">${svg(a)}</div><div class="zeile" aria-label="Gleichung" aria-live="polite"></div>` +
+      `<div class="hinweis-zeile versteckt"></div><div class="vorrat"></div>` +
+      `<div class="pruefen"><button class="knopf breit" type="button" data-pruefen disabled>Prüfen</button></div>` +
+      `<div class="rueck versteckt"></div><div class="unten versteckt"><button class="knopf" type="button" data-weiter>Weiter</button></div></div>`;
+    const karte = ziel.querySelector(".karte"), zeile = karte.querySelector(".zeile"), vorrat = karte.querySelector(".vorrat"),
+      hinweis = karte.querySelector(".hinweis-zeile"), knopf = karte.querySelector("[data-pruefen]");
+
+    function male() {
+      const drin = new Set(folge.map(s => s.id));
+      zeile.innerHTML = folge.map(s => `<button type="button" class="stein" data-id="${s.id}" aria-label="${s.art === "q" ? s.w + " Quadrat" : s.w} zurücklegen"${fertig ? " disabled" : ""}>${steinHTML(s)}</button>`).join("");
+      vorrat.innerHTML = a.steine.map(s => `<button type="button" class="stein${drin.has(s.id) ? " leer" : ""}" data-id="${s.id}"${drin.has(s.id) || fertig ? " disabled" : ""}>${steinHTML(s)}</button>`).join("");
+      knopf.disabled = fertig || !folge.length;
+    }
+    vorrat.addEventListener("click", e => {
+      const b = e.target.closest(".stein"); if (!b || b.disabled || fertig) return;
+      folge.push(a.steine[Number(b.dataset.id)]); hinweis.classList.add("versteckt"); male();
+    });
+    zeile.addEventListener("click", e => {
+      const b = e.target.closest(".stein"); if (!b || b.disabled || fertig) return;
+      folge = folge.filter(s => s.id !== Number(b.dataset.id)); hinweis.classList.add("versteckt"); male();
+    });
+    knopf.onclick = () => {
+      const erg = pruefe(folge, a);
+      if (erg.unfertig) { hinweis.textContent = erg.unfertig; hinweis.classList.remove("versteckt"); return; }
+      fertig = true; male();
+      karte.querySelector(".pruefen").classList.add("versteckt"); vorrat.classList.add("versteckt");
+      karte.querySelector(".bildfeld").innerHTML = svg(a, true);
+      zeile.classList.add(erg.ok ? "ok" : "falsch");
+      const grund = `${q2(a.kat[0])} + ${q2(a.kat[1])} = ${q2(a.hyp)}`;
+      const H_ = `<b class="blau">${a.hyp}</b>`, K = `<b class="ocker">${a.kat[0]}</b> und <b class="ocker">${a.kat[1]}</b>`;
+      let weg;
+      if (erg.ok && erg.umgestellt) weg = `Das ist <span class="gl">${grund}</span>, nur umgestellt. Die Hypotenuse ist ${H_}, die Katheten sind ${K}.`;
+      else if (erg.ok) weg = `Die Hypotenuse ist ${H_}, die Katheten sind ${K}. Kathete² + Kathete² = Hypotenuse².`;
+      else weg = `${erg.text}<br>Richtig ist <span class="gl">${grund}</span>. Die Hypotenuse ist ${H_}, sie liegt dem rechten Winkel gegenüber.`;
+      if (erg.ok) richtig++;
+      else fehler.push({ gegeben: gleichungHTML(folge), loesung: `<span class="gl">${grund}</span>` });
+      const r = karte.querySelector(".rueck");
+      r.classList.remove("versteckt"); r.classList.add(erg.ok ? "ok" : "falsch");
+      r.innerHTML = (erg.ok ? U.wahl(["Richtig.", "Stimmt.", "Genau."]) : "Nicht ganz.") + `<div class="weg">${weg}</div>`;
+      ziel.querySelector(".punkte").textContent = `${richtig} / ${ANZAHL}`;
+      const u = karte.querySelector(".unten"); u.classList.remove("versteckt");
+      const w = u.querySelector("[data-weiter]"); w.focus({ preventScroll: true });
+      w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };
+      if (u.getBoundingClientRect().bottom > innerHeight) u.scrollIntoView({ behavior: "smooth", block: "end" });
+    };
+    male();
+  }
+
+  function ende() {
+    const q = richtig / ANZAHL, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
+    let h = `<div class="leiste"><h1>${TITEL}</h1></div><div class="karte ende"><div class="kopf">Geschafft</div>` +
+      `<div class="gross">${richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+      [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
+      fehler.map(f => `<li><span class="klein">Deine Gleichung:</span> ${f.gegeben}<br><span class="klein">richtig:</span> <b>${f.loesung}</b></li>`).join("") + "</ul>";
+    h += `<button class="knopf breit" type="button" data-neu>Neue Runde</button></div>`;
+    ziel.innerHTML = h;
+    ziel.querySelector("[data-neu]").onclick = start;
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

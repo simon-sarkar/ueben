@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Kopfrechen-Sprint</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  .stufen { display: grid; gap: 10px; margin: 4px 0 16px; }
+  .stufen button { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 14px; border-radius: 12px;
+    background: var(--card); color: var(--ink); border: 2px solid var(--line); font: 600 1em var(--grund); text-align: left;
+    cursor: pointer; touch-action: manipulation; }
+  .stufen button .st { font-size: 1.25em; color: var(--akzent); width: 2.9em; flex: none; letter-spacing: 1px; }
+  .stufen button .was { flex: 1; line-height: 1.3; }
+  .stufen button .rek { display: block; font-size: .82em; color: var(--muted); font-weight: 400; }
+  .stufen button[aria-pressed="true"] { border-color: var(--hue); background: var(--merke); }
+
+  #app.spielt { padding-bottom: 12px; }
+  .spiel { display: flex; flex-direction: column; min-height: calc(var(--hoehe, 640px) - 28px); }
+  .status { display: flex; align-items: baseline; gap: 12px; font-family: var(--kopf); font-weight: 600; margin: 2px 0 8px; }
+  .status .zeit { font-size: 1.35em; min-width: 3.2em; }
+  .status .zeit.knapp { color: var(--bad); }
+  .status .stufe { color: var(--akzent); flex: 1; text-align: center; letter-spacing: 1px; }
+  .status .pkt { color: var(--hue); font-size: 1.15em; white-space: nowrap; }
+  .status .pkt.plus { animation: hops .3s; }
+  @keyframes hops { 50% { transform: scale(1.25); } }
+  .spiel .balken { margin-bottom: 14px; }
+  .spiel .balken > i { transition: width .2s linear; }
+  .feld { text-align: center; }
+  .term { font: 600 clamp(28px, 9vw, 40px)/1.2 var(--kopf); white-space: nowrap; margin: 6px 0 12px; }
+  .term .luecke { display: inline-block; min-width: 1.4em; border-bottom: 3px solid var(--akzent); color: var(--akzent); }
+  .term.text { font-size: clamp(26px, 8vw, 36px); }
+  .antwort { min-height: 66px; border: 2px solid var(--line); border-radius: 14px; background: #fff; display: flex;
+    align-items: center; justify-content: center; font: 600 34px/1 var(--kopf); letter-spacing: 1px; }
+  .antwort .leer { color: #C9BFB1; }
+  .antwort.falsch { border-color: var(--bad); background: var(--badbg); color: var(--bad); text-decoration: line-through; }
+  .antwort.richtig { border-color: var(--ok); background: var(--okbg); color: var(--ok); }
+  .korrektur { min-height: 1.7em; margin-top: 8px; font: 600 1.15em var(--kopf); color: var(--bad); }
+
+  .tasten { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: auto; padding-top: 12px;
+    user-select: none; -webkit-user-select: none; }
+  .tasten button { min-height: 56px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink);
+    font: 600 1.5em var(--kopf); cursor: pointer; touch-action: manipulation; padding: 0; }
+  .tasten button.an { background: var(--tint); }
+  .tasten .ok { grid-row: span 2; background: var(--hue); border-color: var(--hue); color: #fff; font-size: 1.25em; }
+  .tasten .ok.an { background: #7a420f; }
+  .tasten .null { grid-column: span 3; }
+  .tasten .loesch { font-size: 1.1em; }
+  .tasten button:disabled { opacity: .5; }
+  @media (max-height: 620px) { .tasten button { min-height: 50px; } .term { margin: 2px 0 8px; } .antwort { min-height: 56px; } }
+
+  .ende .zeile { margin: 4px 0; }
+  .ende .liste li { font-family: var(--kopf); font-weight: 600; }
+  .ende .liste .klein { font-family: var(--grund); font-weight: 400; }
+  .knoepfe { display: grid; gap: 10px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  const R = U.ganz, W = U.wahl, app = document.querySelector("#app");
+  const DAUER = 60;
+  const STUFEN = [
+    { st: "★", was: "Plus und minus bis 100, Einmaleins" },
+    { st: "★★", was: "Zahlenraum 1000, Zerlegen" },
+    { st: "★★★", was: "Rechentricks und Kommazahlen" }
+  ];
+
+  /* ---------- Aufgaben (Lösung wird mitgerechnet) ---------- */
+  // Rechenzeichen: · mal, : geteilt, − minus (U+2212)
+  const T = (term, l) => ({ html: term + " =", l, voll: term + " = " + U.de(l), key: term });
+  const LUECKE = (a, l, z) => ({ html: `${a} + <span class="luecke">?</span> = ${z}`, l, voll: `${a} + ${U.de(l)} = ${z}`, key: a + "+?=" + z });
+  const ohneNull = n => n % 10 !== 0;
+
+  function stufe1() {
+    const art = W(["plus", "plus", "minus", "minus", "mal", "mal", "geteilt", "doppelt"]);
+    if (art === "plus") {          // Summe unter 100: höchstens ein Zehnerübergang
+      let a, b;
+      do { a = R(10, 89); b = Math.random() < 0.4 ? R(2, 9) : R(11, 89); } while (a + b > 99);
+      return T(`${a} + ${b}`, a + b);
+    }
+    if (art === "minus") {         // Minuend unter 100: höchstens ein Übergang
+      const a = R(21, 99), b = Math.random() < 0.4 ? R(2, 9) : R(11, a - 1);
+      return T(`${a} − ${b}`, a - b);
+    }
+    if (art === "mal") { const a = R(2, 10), b = R(2, 10); return T(`${a} · ${b}`, a * b); }
+    if (art === "geteilt") { const d = R(2, 10), q = R(2, 10); return T(`${d * q} : ${d}`, q); }
+    if (Math.random() < 0.5) { const n = R(11, 49); return { html: `Verdopple ${n}.`, text: true, l: 2 * n, voll: `2 · ${n} = ${2 * n}`, key: "d" + n }; }
+    const n = 2 * R(6, 50); return { html: `Halbiere ${n}.`, text: true, l: n / 2, voll: `${n} : 2 = ${n / 2}`, key: "h" + n };
+  }
+
+  function stufe2() {
+    const art = W(["plus", "minus", "glattmal", "glattgeteilt", "ergaenzen", "zerlegen"]);
+    if (art === "plus") {          // mit Zehnerübergang
+      let a, b;
+      if (Math.random() < 0.5) { do { a = R(13, 89); b = R(13, 89); } while (a % 10 + b % 10 < 10); }
+      else { do { a = R(110, 950); b = R(13, 89); } while (a % 10 + b % 10 < 10 || a + b > 999); }
+      return T(`${a} + ${b}`, a + b);
+    }
+    if (art === "minus") {
+      let a, b;
+      if (Math.random() < 0.5) { do { a = R(31, 99); b = R(12, a - 5); } while (a % 10 >= b % 10); }
+      else { do { a = R(110, 999); b = R(12, 89); } while (a % 10 >= b % 10); }
+      return T(`${a} − ${b}`, a - b);
+    }
+    if (art === "glattmal") {
+      const v = R(1, 3);
+      if (v === 1) { const z = 10 * R(2, 9), e = R(2, 9); return Math.random() < 0.5 ? T(`${z} · ${e}`, z * e) : T(`${e} · ${z}`, z * e); }
+      if (v === 2) { const h = 100 * R(2, 4), e = R(2, Math.floor(1000 / h)); return T(`${h} · ${e}`, h * e); }
+      const [x, y] = U.mische(W([[2, 3], [2, 4], [2, 5], [3, 3]])); return T(`${10 * x} · ${10 * y}`, 100 * x * y);
+    }
+    if (art === "glattgeteilt") {
+      const x = R(2, 9), y = R(2, 9), v = R(1, 3);
+      if (v === 1) return T(`${100 * x * y} : ${10 * y}`, 10 * x);    // 3600 : 40
+      if (v === 2) return T(`${10 * x * y} : ${y}`, 10 * x);          // 480 : 6
+      return T(`${10 * x * y} : ${10 * y}`, x);                       // 560 : 70
+    }
+    if (art === "ergaenzen") {
+      if (Math.random() < 0.4) { let a; do { a = R(11, 89); } while (!ohneNull(a)); return LUECKE(a, 100 - a, 100); }
+      const a = Math.random() < 0.5 ? 10 * R(11, 99) : R(101, 989);
+      return LUECKE(a, 1000 - a, 1000);
+    }
+    const e = R(3, 9), z = R(12, 19); return T(`${e} · ${z}`, e * z);
+  }
+
+  function stufe3() {
+    const art = W(["zerlegen", "zerlegen", "dh", "dez", "dez", "dez", "komma"]);
+    if (art === "zerlegen") {
+      const e = R(3, 9);
+      if (Math.random() < 0.6) { let z; do { z = R(21, 98); } while (!ohneNull(z)); return T(`${e} · ${z}`, e * z); }
+      const z = 100 * R(1, 4) + W([-1, -1, -2, 1, 2]); return T(`${e} · ${z}`, e * z);    // 6 · 299
+    }
+    if (art === "dh") {            // Verdoppeln und Halbieren
+      const v = R(1, 3);
+      if (v === 1) {
+        let g; do { g = 2 * R(6, 24); } while (!ohneNull(g));
+        const f = 10 * R(1, 9) + 5;
+        return Math.random() < 0.5 ? T(`${g} · ${f}`, g * f) : T(`${f} · ${g}`, g * f);   // 24 · 55
+      }
+      if (v === 2) { const n = 4 * R(3, 24); return T(`25 · ${n}`, 25 * n); }
+      let n; do { n = 2 * R(6, 49); } while (!ohneNull(n)); return T(`50 · ${n}`, 50 * n);
+    }
+    if (art === "dez") {           // exakt in Hundertsteln gerechnet
+      const v = R(1, 5);
+      if (v === 1) { const n = R(22, 98); return T(`0,5 · ${n}`, n / 2); }
+      if (v === 2) { const x = R(2, 9), y = R(2, 9); return T(`${U.de(x * y / 10)} : ${U.de(y / 10)}`, x); }   // 4,8 : 0,6
+      if (v === 3) { const n = R(8, 30); let m; do { m = R(101, 100 * n - 101); } while (!ohneNull(m)); return T(`${n} − ${U.de(m / 100)}`, (100 * n - m) / 100); }
+      if (v === 4) { let a, b; do { a = R(11, 99); b = R(11, 99); } while (!ohneNull(a) || !ohneNull(b)); return T(`${U.de(a / 10)} + ${U.de(b / 10)}`, (a + b) / 10); }
+      const c = R(2, 9), n = R(11, 99); return T(`0,${c} · ${n}`, c * n / 10);
+    }
+    let m; do { m = R(101, 9989); } while (!ohneNull(m));
+    return T(`1000 − ${U.de(m / 10)}`, (10000 - m) / 10);        // 1000 − 36,5
+  }
+  const ERZEUGE = [stufe1, stufe2, stufe3];
+  window.KR = { ERZEUGE };    // für den Test der Aufgaben
+
+  /* ---------- Bildschirmhöhe (iOS: innerHeight statt 100vh) ---------- */
+  const hoehe = () => document.documentElement.style.setProperty("--hoehe", innerHeight + "px");
+  hoehe(); addEventListener("resize", hoehe);
+
+  /* ---------- Start ---------- */
+  let stufe = 0;
+  function start() {
+    app.classList.remove("spielt");
+    let h = `<div class="leiste"><h1>Kopfrechen-Sprint</h1></div><div class="karte">` +
+      `<p class="frage">Löse in 60 Sekunden so viele Aufgaben wie möglich.</p><div class="stufen">`;
+    STUFEN.forEach((s, i) => {
+      const rek = U.rekord("kopfrechnen-" + (i + 1)).wert;
+      h += `<button type="button" data-i="${i}" aria-pressed="${i === stufe}"><span class="st">${s.st}</span>` +
+        `<span class="was">${s.was}<span class="rek">${rek ? "Rekord: " + rek : "noch kein Rekord"}</span></span></button>`;
+    });
+    h += `</div><button class="knopf breit" type="button" data-start>Start</button></div>`;
+    app.innerHTML = h;
+    app.querySelectorAll(".stufen button").forEach(b => b.onclick = () => {
+      stufe = Number(b.dataset.i);
+      app.querySelectorAll(".stufen button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    });
+    app.querySelector("[data-start]").onclick = spiel;
+  }
+
+  /* ---------- Spiel ---------- */
+  let lauf = null;
+  function spiel() {
+    app.classList.add("spielt");
+    app.innerHTML = `<div class="spiel"><div class="status"><span class="zeit">60 s</span><span class="stufe">${STUFEN[stufe].st}</span>` +
+      `<span class="pkt">0 Punkte</span></div><div class="balken"><i style="width:100%"></i></div>` +
+      `<div class="feld"><div class="term"></div><div class="antwort" aria-live="polite"></div><div class="korrektur"></div></div>` +
+      `<div class="tasten">` +
+      ["7", "8", "9", "⌫", "4", "5", "6", ",", "1", "2", "3", "OK", "0"].map(k =>
+        `<button type="button" data-k="${k}" class="${k === "OK" ? "ok" : k === "0" ? "null" : k === "⌫" ? "loesch" : ""}"` +
+        `${k === "⌫" ? ' aria-label="Löschen"' : ""}>${k}</button>`).join("") + `</div></div>`;
+    window.scrollTo(0, 0);
+    const el = s => app.querySelector(s);
+    const zeitEl = el(".zeit"), balken = el(".balken > i"), pktEl = el(".pkt"), termEl = el(".term"), antEl = el(".antwort"), korEl = el(".korrektur");
+    const s = { punkte: 0, anzahl: 0, fehler: [], eingabe: "", sperre: false, aufg: null, zuletzt: [], t0: performance.now(), aus: false };
+    lauf = s;
+
+    function neueAufgabe() {
+      let a, n = 0;
+      do { a = ERZEUGE[stufe](); n++; } while (s.zuletzt.includes(a.key) && n < 50);
+      s.zuletzt.push(a.key); if (s.zuletzt.length > 12) s.zuletzt.shift();
+      s.aufg = a; s.eingabe = "";
+      termEl.className = "term" + (a.text ? " text" : "");
+      termEl.innerHTML = a.html;
+      antEl.className = "antwort"; korEl.textContent = "";
+      zeigeEingabe();
+    }
+    function zeigeEingabe() { antEl.innerHTML = s.eingabe ? U.esc(s.eingabe) : '<span class="leer">?</span>'; }
+    function taste(k) {
+      if (s.aus || s.sperre) return;
+      if (k === "⌫") s.eingabe = s.eingabe.slice(0, -1);
+      else if (k === ",") { if (!s.eingabe.includes(",") && s.eingabe.length < 7) s.eingabe = (s.eingabe || "0") + ","; }
+      else if (k === "OK") return pruefe();
+      else if (s.eingabe.replace(",", "").length < 7) s.eingabe = (s.eingabe === "0" ? "" : s.eingabe) + k;
+      zeigeEingabe();
+    }
+    function pruefe() {
+      const v = U.zahl(s.eingabe);
+      if (isNaN(v)) return;
+      s.anzahl++;
+      if (U.gleich(v, s.aufg.l, 1e-6)) {
+        s.punkte++;
+        pktEl.textContent = s.punkte + (s.punkte === 1 ? " Punkt" : " Punkte");
+        pktEl.classList.remove("plus"); void pktEl.offsetWidth; pktEl.classList.add("plus");
+        neueAufgabe();
+      } else {
+        s.fehler.push({ voll: s.aufg.voll, gegeben: U.de(v) });
+        s.sperre = true;
+        antEl.classList.add("falsch");
+        korEl.textContent = s.aufg.voll;
+        setTimeout(() => { if (s.aus) return; s.sperre = false; neueAufgabe(); }, 1500);
+      }
+    }
+    app.querySelectorAll(".tasten button").forEach(b => {
+      b.addEventListener("click", () => taste(b.dataset.k));
+      b.addEventListener("pointerdown", () => b.classList.add("an"));
+      ["pointerup", "pointerleave", "pointercancel"].forEach(t => b.addEventListener(t, () => b.classList.remove("an")));
+    });
+    s.tick = setInterval(() => {
+      const rest = DAUER - (performance.now() - s.t0) / 1000;
+      if (rest <= 0) return ende(s);
+      zeitEl.textContent = Math.ceil(rest) + " s";
+      zeitEl.classList.toggle("knapp", rest <= 10);
+      balken.style.width = (100 * rest / DAUER) + "%";
+    }, 100);
+    neueAufgabe();
+  }
+
+  /* Tastatur am Rechner */
+  addEventListener("keydown", e => {
+    if (!lauf || lauf.aus) return;
+    const m = { Backspace: "⌫", Enter: "OK", ",": ",", ".": "," };
+    const k = /^[0-9]$/.test(e.key) ? e.key : m[e.key];
+    if (!k) return;
+    e.preventDefault();
+    const b = app.querySelector(`.tasten [data-k="${k}"]`); if (b) b.click();
+  });
+
+  /* ---------- Ende ---------- */
+  function ende(s) {
+    s.aus = true; clearInterval(s.tick); lauf = null;
+    app.classList.remove("spielt");
+    const r = U.rekord("kopfrechnen-" + (stufe + 1), s.punkte);
+    let h = `<div class="leiste"><h1>Kopfrechen-Sprint</h1></div><div class="karte ende"><div class="kopf">Zeit um · Stufe ${STUFEN[stufe].st}</div>` +
+      `<div class="gross">${s.punkte} ${s.punkte === 1 ? "Punkt" : "Punkte"}</div>` +
+      `<p class="zeile">${s.anzahl} ${s.anzahl === 1 ? "Aufgabe" : "Aufgaben"} beantwortet, ${s.fehler.length} falsch.</p>` +
+      `<p class="zeile"><b>${r.neu && s.punkte > 0 ? "Neuer Rekord." : "Dein Rekord: " + r.wert}</b></p>`;
+    if (s.fehler.length) h += `<ul class="liste">` + s.fehler.map(f =>
+      `<li>${f.voll}<br><span class="klein">Deine Antwort: ${U.esc(f.gegeben)}</span></li>`).join("") + `</ul>`;
+    h += `<div class="knoepfe"><button class="knopf breit" type="button" data-nochmal>Nochmal</button>` +
+      `<button class="knopf zwei breit" type="button" data-stufe>Stufe wechseln</button></div></div>`;
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+    app.querySelector("[data-nochmal]").onclick = spiel;
+    app.querySelector("[data-stufe]").onclick = start;
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

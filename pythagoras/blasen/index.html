@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Rechte Winkel fangen</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #spiel { position: fixed; inset: 0; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; }
+  .hud { display: flex; align-items: center; gap: 14px; padding: 6px 8px 6px 16px; padding-top: max(6px, env(safe-area-inset-top));
+    border-bottom: 2px solid var(--line); background: var(--bg); font-family: var(--kopf); font-weight: 600; flex: none; }
+  .hud .wert { color: var(--muted); font-size: .8em; white-space: nowrap; }
+  .hud .wert b { color: var(--hue); font-size: 1.3em; margin-left: 4px; }
+  .hud .leben { display: flex; gap: 6px; margin-left: auto; }
+  .hud .leben i { width: 14px; height: 14px; border-radius: 50%; background: var(--akzent); box-shadow: inset 0 0 0 2px var(--hue); }
+  .hud .leben i.aus { background: transparent; box-shadow: inset 0 0 0 2px var(--line); }
+  .pausek { width: 48px; height: 48px; border: 0; border-radius: 12px; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px; touch-action: manipulation; }
+  .pausek i { width: 5px; height: 18px; border-radius: 2px; background: var(--hue); }
+  .pausek:disabled { opacity: .3; }
+  .feldbox { position: relative; flex: 1; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .ebene { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)); background: rgba(255, 248, 236, .9); overflow-y: auto;
+    -webkit-overflow-scrolling: touch; user-select: text; -webkit-user-select: text; }
+  .ebene.oben { justify-content: flex-start; }
+  .ebene .karte { margin: auto 0; }
+  .ebene h1 { font-size: 1.4em; }
+  .ebene p { margin: 0 0 12px; }
+  .ebene .knopf { margin-top: 6px; }
+  .zahlen { font-family: var(--kopf); font-weight: 600; font-size: 1.4em; margin: 2px 0 6px; }
+  .rechnung { font-family: var(--kopf); font-weight: 600; font-size: .95em; line-height: 1.5; margin: 4px 0 8px; }
+  .titel-ok { color: var(--ok); } .titel-bad { color: var(--bad); }
+  .ende .gross { margin: 0; }
+  .ende .liste .rechnung { font-size: .85em; margin: 2px 0 0; }
+  .knopf:focus:not(:focus-visible) { outline: none; }
+  @media (max-width: 380px) { .hud { gap: 10px; } .rechnung { font-size: .88em; } }
+</style>
+</head>
+<body>
+<div id="spiel">
+  <div class="hud">
+    <span class="wert">Punkte<b id="pkt">0</b></span>
+    <span class="wert">Stufe<b id="stufe">1</b></span>
+    <span class="leben" id="leben" aria-label="3 Leben"><i></i><i></i><i></i></span>
+    <button class="pausek" id="pause" type="button" aria-label="Pause" disabled><i></i><i></i></button>
+  </div>
+  <div class="feldbox">
+    <canvas id="feld" aria-label="Spielfeld"></canvas>
+    <div class="ebene" id="start">
+      <div class="karte">
+        <h1>Rechte Winkel fangen</h1>
+        <p>Tippe jeden Stein an, dessen drei Seitenlängen ein rechtwinkliges Dreieck ergeben.</p>
+        <p>Ein falscher Tipp oder ein rechtwinkliger Stein, der oben entkommt, kostet ein Leben.</p>
+        <p class="klein" id="rekordStart"></p>
+        <button class="knopf breit" type="button" id="los">Start</button>
+      </div>
+    </div>
+    <div class="ebene versteckt" id="info"><div class="karte" id="infoKarte"></div></div>
+    <div class="ebene oben versteckt" id="ende"><div class="karte ende" id="endeKarte"></div></div>
+  </div>
+</div>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /*POOL*/
+  /* Werte in Zehnteln (ganzzahlig rechnen); Zuordnung rechtwinklig/nicht wird gerechnet, nicht gesetzt.
+     „nah“: Summe der Kathetenquadrate liegt 1 bis 3 neben dem Hypotenusenquadrat (Dezimal: 0,01 bis 0,03). */
+  const lies = s => s.trim().split(/\s+/).map(t => t.split("-").map(x => Math.round(Number(x.replace(",", ".")) * 10)).sort((p, q) => p - q));
+  function pruefe(z) {
+    const [a, b, c] = z, qa = a * a, qb = b * b, qc = c * c;
+    return { a, b, c, qa, qb, qc, summe: qa + qb, recht: qa + qb === qc };
+  }
+  const zahl = z => U.de(z / 10), quad = q => U.de(q / 100);
+  function weg(z) {
+    const r = pruefe(z);
+    return `<div>${zahl(r.a)}² + ${zahl(r.b)}² = ${quad(r.qa)} + ${quad(r.qb)} = ${quad(r.summe)}</div>` +
+      `<div>${zahl(r.c)}² = ${quad(r.qc)}</div>` +
+      `<div>${quad(r.summe)} ${r.recht ? "=" : "≠"} ${quad(r.qc)} → ${r.recht ? "rechtwinklig" : "nicht rechtwinklig"}</div>`;
+  }
+  const POOL = {
+    /* Vielfache von 3-4-5 */
+    recht1: lies("15-20-25 18-24-30 24-32-40 27-36-45 30-40-50 33-44-55 36-48-60"),
+    recht1b: lies("39-52-65 42-56-70 45-60-75 51-68-85 54-72-90 57-76-95"),
+    recht2: lies("12-35-37 14-48-50 24-45-51 40-42-58 11-60-61 25-60-65 33-56-65 16-63-65 32-60-68 48-55-73 24-70-74 21-72-75 30-72-78"),
+    rechtDez: lies("0,9-1,2-1,5 1,8-2,4-3 2,1-2,8-3,5 2,7-3,6-4,5 3,3-4,4-5,5 3,6-4,8-6 4,5-6-7,5 1,6-3-3,4 3,3-5,6-6,5 " +
+      "2,5-6-6,5 1,1-6-6,1 2,4-4,5-5,1 1,4-4,8-5 7,5-10-12,5 3,6-7,7-8,5 2,4-7-7,4"),
+    rechtGross: lies("18-80-82 36-77-85 40-75-85 60-63-87 39-80-89 35-84-91 65-72-97 28-96-100"),
+    nahKlein: lies("12-22-25 17-21-27 16-23-28 15-26-30 11-29-31 " +
+      "20-25-32 19-27-33 14-31-34 18-30-35 23-29-37 17-34-38 22-31-38 9-39-40"),
+    nahMittel: lies("28-30-41 26-33-42 25-35-43 16-41-44 23-41-47 28-39-48 10-49-50 32-41-52 31-43-53 25-49-55 15-55-57 " +
+      "35-45-57 34-47-58 11-59-60 24-55-60"),
+    nahGross: lies("38-49-62 37-51-63 31-56-64 41-53-67 20-65-68 40-55-68 26-65-70 49-50-70 33-64-72 44-57-72 51-55-75 " +
+      "41-64-76 47-61-77 46-63-78 25-76-80 50-65-82 43-71-83 53-69-87 52-71-88 56-73-92 55-75-93 65-76-100"),
+    nahDez: lies("0,8-0,9-1,2 0,7-1,1-1,3 1-1,5-1,8 1,4-1,7-2,2 1,3-1,9-2,3 1,7-2,1-2,7 1,6-2,3-2,8 1,5-2,6-3 " +
+      "2-2,5-3,2 1,9-2,7-3,3 1,4-3,1-3,4 1,8-3-3,5 2,3-2,9-3,7 2,2-3,1-3,8 2,6-3,3-4,2 2,5-3,5-4,3 2,8-3,9-4,8 " +
+      "1-4,9-5 3,5-4,5-5,7 2,4-5,5-6 3,4-4,7-5,8 3,8-4,9-6,2 4,1-5,3-6,7 4-5,5-6,8 4,9-5-7 4,4-5,7-7,2 5,1-5,5-7,5 2,5-7,6-8 5-6,5-8,2")
+  };
+  /*ENDPOOL*/
+
+  /* Stufen: welche Tripel, Zeit von unten nach oben (s), Fänge bis zur nächsten Stufe */
+  const P = POOL;
+  const STUFEN = [
+    null,
+    { recht: [P.recht1], nah: [P.nahKlein, P.nahMittel], zeit: 10.5, fang: 6, name: "" },
+    { recht: [P.recht1b, P.recht2, P.recht2], nah: [P.nahMittel, P.nahGross], zeit: 10, fang: 6, name: "neue Tripel" },
+    { recht: [P.rechtDez], nah: [P.nahDez], zeit: 10.5, fang: 6, name: "Dezimalzahlen" },
+    { recht: [P.recht1b, P.recht2, P.rechtGross, P.rechtDez], nah: [P.nahMittel, P.nahGross, P.nahDez], zeit: 9, fang: 6, name: "alles gemischt" }
+  ];
+  const stufeDaten = s => s < STUFEN.length ? STUFEN[s] : Object.assign({}, STUFEN[4], { zeit: Math.max(5.5, 9 - 0.8 * (s - 4)), name: "schneller" });
+
+  const $ = id => document.getElementById(id);
+  const cv = $("feld"), ctx = cv.getContext("2d"), box = cv.parentElement;
+  const FARBEN = ["#faeadb", "#dbfafa", "#faf9db", "#dbebfa"];
+  const SCHRIFT = '600 23px "Lexend", "Segoe UI", Arial, sans-serif';
+  const HOEHE = 58;
+  let W = 0, H = 0, dpr = 1;
+  let S = null;            // Spielzustand
+  let tLetzt = 0, raf = 0;
+
+  function groesse() {
+    const r = box.getBoundingClientRect();
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (S) S.steine.forEach(s => { s.x = Math.min(s.x, Math.max(8, W - s.w - 8)); });
+    zeichne();
+  }
+
+  function neuesSpiel() {
+    S = { steine: [], effekte: [], punkte: 0, stufe: 1, leben: 3, fang: 0, gesamtFang: 0, tStufe: 0, bisNeu: 0.3,
+      ohneRecht: 0, zuletzt: [], fehler: [], status: "lauf", banner: null };
+    hud();
+  }
+
+  /* ---------- Steine erzeugen ---------- */
+  function ziehe() {
+    const d = stufeDaten(S.stufe);
+    /* etwa 45 % rechtwinklig; nach drei anderen Steinen sicher ein rechtwinkliger */
+    let recht = Math.random() < 0.45 || S.ohneRecht >= 3;
+    let quelle = U.wahl(recht ? d.recht : d.nah);
+    if (S.stufe === 3 && Math.random() < 0.2) quelle = U.wahl(recht ? [P.recht2] : [P.nahMittel]);
+    let z, n = 0;
+    do { z = U.wahl(quelle); n++; } while (S.zuletzt.includes(z.join("/")) && n < 30);
+    S.zuletzt.push(z.join("/")); if (S.zuletzt.length > 10) S.zuletzt.shift();
+    S.ohneRecht = recht ? 0 : S.ohneRecht + 1;
+    return z;
+  }
+  function textBreite(teile) {
+    ctx.font = SCHRIFT;
+    return teile.reduce((s, t) => s + ctx.measureText(t).width, 0) + 2 * 22;
+  }
+  function neuerStein() {
+    const z = ziehe(), zeige = U.mische(z).map(zahl);
+    const w = Math.ceil(textBreite(zeige) + 32);
+    const y = H + 6;
+    for (let v = 0; v < 10; v++) {
+      const x = 8 + Math.random() * Math.max(0, W - w - 16);
+      /* alle Steine steigen gleich schnell: wer beim Start nicht überlappt, überlappt nie */
+      const frei = S.steine.every(s => s.y + s.h < y - 14 || s.x + s.w + 10 < x || x + w + 10 < s.x);
+      if (frei) {
+        S.steine.push({ z, zeige, recht: pruefe(z).recht, x, y, w, h: HOEHE, farbe: U.wahl(FARBEN), zustand: "flug", t: 0 });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /* ---------- Spielschleife ---------- */
+  function tempo() {
+    const d = stufeDaten(S.stufe);
+    const zeit = d.zeit * (1 - Math.min(0.12, S.tStufe * 0.004));   // innerhalb der Stufe langsam schneller
+    return { v: (H + HOEHE) / zeit, abstand: zeit / 4.3 };
+  }
+  function schritt(t) {
+    raf = 0;
+    if (!S || S.status !== "lauf") return;
+    const dt = Math.min(0.05, (t - (tLetzt || t)) / 1000); tLetzt = t;
+    S.tStufe += dt;
+    const { v, abstand } = tempo();
+    S.bisNeu -= dt;
+    if (S.bisNeu <= 0) {
+      const lebend = S.steine.filter(s => s.zustand === "flug").length;
+      if (lebend < 6 && neuerStein()) S.bisNeu = abstand * (0.8 + Math.random() * 0.4); else S.bisNeu = 0.2;
+    }
+    for (const s of S.steine) {
+      if (s.zustand === "flug") {
+        s.y -= v * dt;
+        if (s.y <= 2 && s.recht) { s.y = 2; s.zustand = "entkommen"; s.t = 0; fehler(s, "entkommen"); }
+        else if (s.y + s.h < 0) s.zustand = "weg";
+      } else s.t += dt;
+      if ((s.zustand === "treffer" && s.t > 0.45)) s.zustand = "weg";
+    }
+    S.steine = S.steine.filter(s => s.zustand !== "weg");
+    S.effekte.forEach(e => e.t += dt); S.effekte = S.effekte.filter(e => e.t < e.dauer);
+    if (S.banner) { S.banner.t += dt; if (S.banner.t > 1.8) S.banner = null; }
+    zeichne();
+    if (S.status === "lauf") raf = requestAnimationFrame(schritt);
+  }
+  function weiterLaufen() {
+    if (raf) cancelAnimationFrame(raf);
+    tLetzt = 0; raf = requestAnimationFrame(schritt);
+  }
+
+  /* ---------- Zeichnen ---------- */
+  function rundRect(x, y, w, h, r) {
+    ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+  }
+  function stein(s) {
+    let fuell = s.farbe, rand = "#975214", alpha = 1, sk = 1, dx = 0;
+    if (s.zustand === "treffer") { fuell = "#ECFDF3"; rand = "#166534"; alpha = Math.max(0, 1 - s.t / 0.45); sk = 1 + s.t * 0.35; }
+    if (s.zustand === "falsch" || s.zustand === "entkommen") { fuell = "#FEF3F2"; rand = "#B42318"; dx = s.t < 0.4 ? Math.sin(s.t * 60) * 5 * (1 - s.t / 0.4) : 0; }
+    ctx.font = SCHRIFT;
+    const breiten = s.zeige.map(t => ctx.measureText(t).width), summe = breiten.reduce((a, b) => a + b, 0) + 44;
+    if (summe + 28 > s.w) s.w = Math.ceil(summe + 28);   // falls die Schrift erst später geladen wurde
+    ctx.save(); ctx.globalAlpha = alpha;
+    const cx = s.x + s.w / 2 + dx, cy = s.y + s.h / 2;
+    ctx.translate(cx, cy); ctx.scale(sk, sk);
+    rundRect(-s.w / 2, -s.h / 2, s.w, s.h, 16);
+    ctx.fillStyle = fuell; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = rand; ctx.stroke();
+    ctx.font = SCHRIFT; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    let x = -summe / 2;
+    s.zeige.forEach((t, i) => {
+      ctx.fillStyle = "#1F2433"; ctx.fillText(t, x, 1); x += breiten[i];
+      if (i < 2) { ctx.fillStyle = "#B8A48E"; ctx.beginPath(); ctx.arc(x + 11, 1, 2.6, 0, 6.2832); ctx.fill(); x += 22; }
+    });
+    ctx.restore();
+  }
+  function zeichne() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "#FFF8EC"; ctx.fillRect(0, 0, W, H);
+    /* oberer Rand: hier entkommen die Steine */
+    ctx.fillStyle = "#eee3d9"; ctx.fillRect(0, 0, W, 4);
+    if (!S) return;
+    S.steine.forEach(stein);
+    for (const e of S.effekte) {
+      const a = 1 - e.t / e.dauer;
+      ctx.globalAlpha = a; ctx.fillStyle = "#166534"; ctx.font = '600 22px "Lexend", Arial, sans-serif';
+      ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e.text, e.x, e.y - e.t * 50);
+      ctx.globalAlpha = 1;
+    }
+    if (S.banner) {
+      const a = Math.min(1, (1.8 - S.banner.t) / 0.5);
+      ctx.globalAlpha = Math.max(0, a); ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillStyle = "#975214"; ctx.font = '600 32px "Lexend", Arial, sans-serif';
+      ctx.fillText("Stufe " + S.stufe, W / 2, H * 0.4);
+      if (S.banner.name) { ctx.fillStyle = "#4E5566"; ctx.font = '600 18px "Lexend", Arial, sans-serif'; ctx.fillText(S.banner.name, W / 2, H * 0.4 + 34); }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* ---------- Tippen ---------- */
+  cv.addEventListener("pointerdown", e => {
+    if (!S || S.status !== "lauf") return;
+    e.preventDefault();
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    for (let i = S.steine.length - 1; i >= 0; i--) {
+      const s = S.steine[i], pad = 8;
+      if (s.zustand !== "flug") continue;
+      if (px >= s.x - pad && px <= s.x + s.w + pad && py >= s.y - pad && py <= s.y + s.h + pad) {
+        s.t = 0;
+        if (s.recht) {
+          s.zustand = "treffer";
+          const plus = 10 * S.stufe; S.punkte += plus; S.fang++; S.gesamtFang++;
+          S.effekte.push({ text: "+" + plus, x: s.x + s.w / 2, y: s.y - 6, t: 0, dauer: 0.8 });
+          const d = stufeDaten(S.stufe);
+          if (S.fang >= d.fang) { S.stufe++; S.fang = 0; S.tStufe = 0; S.banner = { t: 0, name: stufeDaten(S.stufe).name }; }
+          hud();
+        } else { s.zustand = "falsch"; fehler(s, "falsch"); }
+        return;
+      }
+    }
+  });
+
+  /* ---------- Fehler: Spiel hält an und zeigt den Rechenweg ---------- */
+  function fehler(s, art) {
+    S.leben--; S.fehler.push({ z: s.z, zeige: s.zeige, art }); hud();
+    S.status = "info";
+    const letzte = S.leben <= 0;
+    setTimeout(() => {
+      zeichne();
+      $("infoKarte").innerHTML =
+        `<h1 class="${"titel-bad"}">${art === "falsch" ? "Kein rechter Winkel" : "Entkommen"}</h1>` +
+        `<div class="zahlen">${s.zeige.join(" · ")}</div>` +
+        `<div class="rechnung">${weg(s.z)}</div>` +
+        `<p class="klein">${letzte ? "Kein Leben mehr." : (S.leben === 1 ? "Noch 1 Leben." : `Noch ${S.leben} Leben.`)}</p>` +
+        `<button class="knopf breit" type="button" id="infoWeiter">${letzte ? "Zum Ergebnis" : "Weiter"}</button>`;
+      $("info").classList.remove("versteckt");
+      $("pause").disabled = true;
+      const b = $("infoWeiter"); b.focus({ preventScroll: true });
+      b.onclick = () => {
+        $("info").classList.add("versteckt");
+        s.zustand = "weg"; S.steine = S.steine.filter(x => x.zustand !== "weg");
+        if (letzte) return ende();
+        S.status = "lauf"; $("pause").disabled = false; weiterLaufen();
+      };
+    }, 450);
+    /* kurzes Wackeln noch zeigen */
+    const t0 = performance.now();
+    (function wackel(t) { s.t = (t - t0) / 1000; zeichne(); if (s.t < 0.42 && S.status === "info") requestAnimationFrame(wackel); })(t0);
+  }
+
+  /* ---------- Pause ---------- */
+  function pause() {
+    if (!S || S.status !== "lauf") return;
+    S.status = "pause"; $("pause").disabled = true;
+    $("infoKarte").innerHTML = `<h1>Pause</h1><p>Punkte: ${S.punkte} · Stufe ${S.stufe}</p>` +
+      `<button class="knopf breit" type="button" id="infoWeiter">Weiter</button>`;
+    $("info").classList.remove("versteckt");
+    $("infoWeiter").onclick = () => { $("info").classList.add("versteckt"); S.status = "lauf"; $("pause").disabled = false; weiterLaufen(); };
+  }
+  $("pause").onclick = pause;
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+  window.addEventListener("blur", pause);
+
+  /* ---------- Anzeige, Start, Ende ---------- */
+  function hud() {
+    $("pkt").textContent = S.punkte; $("stufe").textContent = S.stufe;
+    const l = $("leben"); l.setAttribute("aria-label", `${Math.max(0, S.leben)} Leben`);
+    [...l.children].forEach((i, n) => i.classList.toggle("aus", n >= S.leben));
+  }
+  function rekordText() {
+    const r = U.rekord("pythagoras-blasen").wert;
+    $("rekordStart").textContent = r > 0 ? `Dein Rekord: ${r} Punkte` : "";
+  }
+  function starte() {
+    $("start").classList.add("versteckt"); $("ende").classList.add("versteckt"); $("info").classList.add("versteckt");
+    neuesSpiel(); S.banner = { t: 0, name: "" };
+    $("pause").disabled = false; weiterLaufen();
+  }
+  function ende() {
+    S.status = "ende"; S.steine = []; S.effekte = []; S.banner = null; $("pause").disabled = true;
+    const r = U.rekord("pythagoras-blasen", S.punkte);
+    let h = `<div class="kopf">Spiel vorbei</div><div class="gross">${S.punkte} Punkte</div>` +
+      `<p>Stufe ${S.stufe} · ${S.gesamtFang} rechtwinklige gefangen</p>` +
+      `<p class="klein">${r.neu ? "Neuer Rekord." : `Dein Rekord: ${r.wert} Punkte`}</p>`;
+    if (S.fehler.length) h += `<ul class="liste">` + S.fehler.map(f => `<li><b>${f.zeige.join(" · ")}</b>` +
+      `<span class="klein"> (${f.art === "falsch" ? "falsch getippt" : "entkommen"})</span><div class="rechnung">${weg(f.z)}</div></li>`).join("") + "</ul>";
+    h += `<button class="knopf breit" type="button" id="nochmal">Nochmal</button>`;
+    $("endeKarte").innerHTML = h;
+    $("ende").classList.remove("versteckt"); $("ende").scrollTop = 0;
+    $("nochmal").onclick = starte;
+    zeichne();
+  }
+
+  $("los").onclick = starte;
+  window.addEventListener("resize", groesse);
+  rekordText();
+  groesse();
+  /* Lexend fürs Canvas laden, dann neu zeichnen (fehlt sie, gilt die Ersatzschrift) */
+  if (document.fonts && document.fonts.load) document.fonts.load(SCHRIFT).then(zeichne, () => {});
+  window.__spiel = () => S;   // für Tests
+})();
+</script>
+</body>
+</html>

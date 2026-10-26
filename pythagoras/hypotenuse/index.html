@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hypotenuse finden</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  .tippbild { touch-action: manipulation; cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .hinweis-tipp { text-align: center; margin: -6px 0 0; }
+  .blau { color: #145897; } .ocker { color: #8F6400; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  const TITEL = "Hypotenuse finden", ANZAHL = 10;
+  const BLAU = "#145897", OCKER = "#C28A12";
+  const W = 320, H = 290, RAND = 42;
+  /* Buchstabengruppen für die Seiten; die Zuordnung zu den Seiten wird gemischt */
+  const GRUPPEN = [["a", "b", "c"], ["p", "q", "r"], ["r", "s", "t"], ["u", "v", "w"], ["x", "y", "z"], ["d", "e", "f"],
+    ["e", "f", "g"], ["k", "m", "n"], ["m", "n", "p"], ["s", "t", "u"], ["g", "h", "k"]];
+
+  /* Gleiche Umrechnung wie U.dreieckSVG, damit Tipps den Seiten zugeordnet werden können */
+  function bildpunkte(p) {
+    const pts = [p.A, p.B, p.C], xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+    const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+    const k = Math.min((W - 2 * RAND) / (maxx - minx || 1), (H - 2 * RAND) / (maxy - miny || 1));
+    const ox = (W - (maxx - minx) * k) / 2, oy = (H - (maxy - miny) * k) / 2;
+    const T = q => [ox + (q[0] - minx) * k, oy + (q[1] - miny) * k];
+    return { A: T(p.A), B: T(p.B), C: T(p.C) };
+  }
+  function abstandStrecke(q, X, Y) {
+    const dx = Y[0] - X[0], dy = Y[1] - X[1], L2 = dx * dx + dy * dy;
+    const t = Math.max(0, Math.min(1, ((q[0] - X[0]) * dx + (q[1] - X[1]) * dy) / L2));
+    return Math.hypot(q[0] - X[0] - t * dx, q[1] - X[1] - t * dy);
+  }
+
+  function erzeuge(art) {
+    const r = 1 + Math.random() * 1.4, tausch = Math.random() < 0.5;
+    const p = U.rechtwinklig(tausch ? 100 * r : 100, tausch ? 100 : 100 * r, U.ganz(0, 359), Math.random() < 0.5);
+    const [na, nb, nc] = U.mische(U.wahl(GRUPPEN));
+    /* C ist der rechte Winkel: BC und CA sind Katheten, AB ist die Hypotenuse */
+    return { art, p, P: bildpunkte(p), namen: { BC: na, CA: nb, AB: nc }, hyp: nc, kat: [na, nb] };
+  }
+
+  function svg(a, farbig, marke) {
+    let s = U.dreieckSVG(a.p, a.namen, { rechterWinkel: "C", breite: W, hoehe: H, rand: RAND, schrift: 24,
+      farben: farbig ? { AB: BLAU, BC: OCKER, CA: OCKER } : null });
+    s = s.replace('class="bild"', 'class="bild tippbild"');
+    if (marke) s = s.replace("</svg>", `<circle cx="${marke.q[0]}" cy="${marke.q[1]}" r="9" fill="none" stroke="${marke.ok ? "#166534" : "#B42318"}" stroke-width="3"/></svg>`);
+    return s;
+  }
+
+  const ziel = document.querySelector("#app");
+  let nr, richtig, fehler, arten;
+
+  function start() {
+    nr = 0; richtig = 0; fehler = [];
+    /* etwa jede dritte Aufgabe fragt nach einer Kathete; die erste immer nach der Hypotenuse */
+    arten = ["h"].concat(U.mische(["h", "h", "h", "h", "h", "h", "k", "k", "k"]));
+    zeige(); window.scrollTo(0, 0);
+  }
+  const kopf = () => `<div class="leiste"><h1>${TITEL}</h1><span class="punkte">${richtig} / ${ANZAHL}</span></div>` +
+    `<div class="balken"><i style="width:${100 * nr / ANZAHL}%"></i></div>`;
+
+  function zeige() {
+    if (nr >= ANZAHL) return ende();
+    const a = erzeuge(arten[nr]);
+    const frage = a.art === "h" ? "Tippe auf die <b>Hypotenuse</b>." : "Tippe auf eine <b>Kathete</b>.";
+    ziel.innerHTML = kopf() + `<div class="karte"><div class="frage">${frage}</div><div class="bildfeld">${svg(a)}</div><p class="klein hinweis-tipp versteckt">Tippe näher an die Mitte einer Seite.</p>` +
+      `<div class="rueck versteckt"></div><div class="unten versteckt"><button class="knopf" type="button" data-weiter>Weiter</button></div></div>`;
+    const karte = ziel.querySelector(".karte"), feld = karte.querySelector(".bildfeld"), hinweis = karte.querySelector(".hinweis-tipp");
+    let fertig = false;
+    feld.addEventListener("click", e => {
+      if (fertig) return;
+      const el = feld.querySelector("svg"), pt = el.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const m = el.getScreenCTM(); if (!m) return;
+      const t = pt.matrixTransform(m.inverse()), q = [t.x, t.y], P = a.P;
+      /* Tipps an einer Ecke der Hypotenuse, weit weg von jeder Seite oder fast gleich nah an einer Kathete
+         und der Hypotenuse sind nicht eindeutig und zählen nicht */
+      const seiten = ["BC", "CA", "AB"].map(k => ({ k, d: abstandStrecke(q, P[k[0]], P[k[1]]) })).sort((x, y) => x.d - y.d);
+      const knapp = seiten[1].d - seiten[0].d < 10 && (seiten[0].k === "AB" || seiten[1].k === "AB");
+      if ([P.A, P.B].some(E => Math.hypot(q[0] - E[0], q[1] - E[1]) < 30) || seiten[0].d > 40 || knapp) {
+        hinweis.classList.remove("versteckt"); return;
+      }
+      fertig = true; hinweis.classList.add("versteckt");
+      werte(a, seiten[0].k, q);
+    });
+
+    function werte(a, kante, qp) {
+      const name = a.namen[kante], istHyp = kante === "AB";
+      const ok = a.art === "h" ? istHyp : !istHyp;
+      feld.innerHTML = svg(a, true, { q: qp, ok });
+      const H_ = `<b class="blau">${a.hyp}</b>`, K = `<b class="ocker">${a.kat[0]}</b> und <b class="ocker">${a.kat[1]}</b>`;
+      let weg;
+      if (ok && a.art === "h") weg = `Die Hypotenuse ${H_} liegt dem rechten Winkel gegenüber und ist die längste Seite. Die Katheten sind ${K}.`;
+      else if (ok) weg = `Die Katheten ${K} bilden den rechten Winkel. Die Hypotenuse ist ${H_}.`;
+      else if (a.art === "h") weg = `Du hast <b class="ocker">${name}</b> getippt, das ist eine Kathete. Die Hypotenuse ${H_} liegt dem rechten Winkel gegenüber und ist die längste Seite.`;
+      else weg = `Du hast ${H_} getippt, das ist die Hypotenuse. Die Katheten ${K} bilden den rechten Winkel.`;
+      if (ok) richtig++;
+      else fehler.push({ frage: (a.art === "h" ? "Hypotenuse" : "Kathete") + ` im Dreieck mit ${[a.hyp, ...a.kat].sort().join(", ")}`,
+        gegeben: name, loesung: a.art === "h" ? a.hyp : a.kat.join(" oder ") });
+      const r = karte.querySelector(".rueck");
+      r.classList.remove("versteckt"); r.classList.add(ok ? "ok" : "falsch");
+      r.innerHTML = (ok ? U.wahl(["Richtig.", "Stimmt.", "Genau."]) : "Nicht ganz.") + `<div class="weg">${weg}</div>`;
+      ziel.querySelector(".punkte").textContent = `${richtig} / ${ANZAHL}`;
+      const u = karte.querySelector(".unten"); u.classList.remove("versteckt");
+      const w = u.querySelector("[data-weiter]"); w.focus({ preventScroll: true });
+      w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };
+      if (u.getBoundingClientRect().bottom > innerHeight) u.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }
+
+  function ende() {
+    const q = richtig / ANZAHL, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
+    let h = `<div class="leiste"><h1>${TITEL}</h1></div><div class="karte ende"><div class="kopf">Geschafft</div>` +
+      `<div class="gross">${richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+      [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
+      fehler.map(f => `<li>${f.frage}<br><span class="klein">Deine Antwort: ${f.gegeben} · richtig: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
+    h += `<button class="knopf breit" type="button" data-neu>Neue Runde</button></div>`;
+    ziel.innerHTML = h;
+    ziel.querySelector("[data-neu]").onclick = start;
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

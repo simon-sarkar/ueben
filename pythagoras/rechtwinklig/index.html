@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Rechtwinklig oder nicht?</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  html, body { overflow-x: hidden; }
+  .seite { overflow-x: hidden; overflow-x: clip; }
+  .anw { margin: 0 0 4px; }
+  .anw + .klein { margin: 0 0 14px; }
+  .stapel { position: relative; margin: 0 0 30px; isolation: isolate; }
+  .stapel .hinten { position: absolute; left: 10px; right: 10px; top: 10px; bottom: -10px; background: var(--tint);
+    border-radius: 14px; z-index: 0; }
+  .stapel .hinten.zwei { left: 20px; right: 20px; top: 20px; bottom: -20px; background: var(--line); z-index: -1; }
+  .sk { position: relative; z-index: 1; margin: 0; touch-action: pan-y; user-select: none;
+    -webkit-user-select: none; cursor: grab; will-change: transform; display: flex; flex-direction: column; }
+  .sk.zieht { cursor: grabbing; }
+  .sk.fertig { cursor: default; }
+  .sk .nummer { font-family: var(--kopf); font-weight: 600; color: var(--muted); font-size: .85em; }
+  .seiten { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin: 18px 0 8px; }
+  .seiten span { font-family: var(--kopf); font-weight: 600; font-size: 1.55em; color: var(--ink); background: var(--bg);
+    border-radius: 12px; padding: 6px 12px; white-space: nowrap; }
+  .seiten small { font-size: .55em; color: var(--muted); margin-left: 3px; }
+  .frage2 { text-align: center; color: var(--muted); margin: 4px 0 0; }
+  .marke { position: absolute; top: 14px; padding: 4px 10px; border-radius: 8px; font: 600 .9em var(--kopf);
+    opacity: 0; pointer-events: none; }
+  .marke.re { right: 14px; color: var(--ok); background: var(--okbg); box-shadow: inset 0 0 0 2px var(--ok); }
+  .marke.li { left: 14px; color: var(--bad); background: var(--badbg); box-shadow: inset 0 0 0 2px var(--bad); }
+  .knoepfe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .knoepfe .knopf { min-height: 56px; padding: 10px 8px; line-height: 1.2; }
+  .rechnung { font-family: var(--kopf); font-weight: 600; font-size: .95em; color: var(--ink); margin-top: 6px; line-height: 1.5; }
+  .sk .rueck { margin-top: 10px; }
+  .knopf:focus:not(:focus-visible) { outline: none; }
+  .liste .rechnung { font-size: .85em; }
+  @media (max-width: 380px) { .seiten span { font-size: 1.4em; padding: 6px 9px; } .rechnung { font-size: .88em; } }
+  @media (prefers-reduced-motion: reduce) { .sk { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /*POOL*/
+  /* Seitentripel: rechtwinklige (a² + b² = c²) und knapp daneben (Summe 1 bis 3 neben dem Quadrat,
+     bei Dezimalzahlen 0,01 bis 0,03). Die Zuordnung wird unten gerechnet, nicht von Hand gesetzt. */
+  const RECHT = "15-20-25 18-24-30 24-32-40 27-36-45 30-40-50 12-35-37 14-48-50 24-45-51 33-44-55 40-42-58 36-48-60 " +
+    "11-60-61 16-63-65 25-60-65 33-56-65 39-52-65 32-60-68 42-56-70 48-55-73 24-70-74 21-72-75 45-60-75 30-72-78 " +
+    "18-80-82 36-77-85 40-75-85 51-68-85 28-96-100";
+  const NAH = "14-17-22 13-19-23 7-23-24 12-22-25 17-21-27 16-23-28 15-26-30 11-29-31 " +
+    "20-25-32 19-27-33 14-31-34 18-30-35 23-29-37 17-34-38 22-31-38 9-39-40 28-30-41 26-33-42 25-35-43 16-41-44 " +
+    "23-41-47 28-39-48 10-49-50 32-41-52 31-43-53 25-49-55 15-55-57 35-45-57 34-47-58 11-59-60 24-55-60 20-65-68 " +
+    "40-55-68 49-50-70 33-64-72 44-57-72 51-55-75 25-76-80 50-65-82 65-76-100";
+  const RECHT_DEZ = "0,9-1,2-1,5 1,8-2,4-3 2,1-2,8-3,5 2,7-3,6-4,5 3,3-4,4-5,5 3,6-4,8-6 4,5-6-7,5 1,6-3-3,4 " +
+    "3,3-5,6-6,5 2,5-6-6,5 1,1-6-6,1 2,4-4,5-5,1 1,4-4,8-5 7,5-10-12,5 3,6-7,7-8,5 2,4-7-7,4";
+  const NAH_DEZ = "0,8-0,9-1,2 0,7-1,1-1,3 1-1,5-1,8 1,4-1,7-2,2 1,3-1,9-2,3 1,7-2,1-2,7 1,6-2,3-2,8 1,5-2,6-3 " +
+    "2-2,5-3,2 1,9-2,7-3,3 1,4-3,1-3,4 1,8-3-3,5 2,3-2,9-3,7 2,2-3,1-3,8 2,6-3,3-4,2 2,5-3,5-4,3 2,8-3,9-4,8 " +
+    "1-4,9-5 3,5-4,5-5,7 2,4-5,5-6 3,4-4,7-5,8 3,8-4,9-6,2 4,1-5,3-6,7 4-5,5-6,8 4,9-5-7 4,4-5,7-7,2 5,1-5,5-7,5 2,5-7,6-8 5-6,5-8,2";
+  /* Tripel aus Text; Werte in Zehnteln, damit alles ganzzahlig gerechnet wird */
+  const lies = s => s.trim().split(/\s+/).map(t => t.split("-").map(x => Math.round(Number(x.replace(",", ".")) * 10)).sort((p, q) => p - q));
+  /* Rechnung: Quadrate in Hundertsteln */
+  function pruefe(z) {
+    const [a, b, c] = z, qa = a * a, qb = b * b, qc = c * c;
+    return { a, b, c, qa, qb, qc, summe: qa + qb, recht: qa + qb === qc };
+  }
+  const zahl = z => U.de(z / 10), quad = q => U.de(q / 100);
+  function weg(z) {
+    const r = pruefe(z);
+    return `<div>${zahl(r.a)}² + ${zahl(r.b)}² = ${quad(r.qa)} + ${quad(r.qb)} = ${quad(r.summe)}</div>` +
+      `<div>${zahl(r.c)}² = ${quad(r.qc)}</div>` +
+      `<div>${quad(r.summe)} ${r.recht ? "=" : "≠"} ${quad(r.qc)} → ${r.recht ? "rechtwinklig" : "nicht rechtwinklig"}</div>`;
+  }
+  const POOL = { recht: lies(RECHT), nah: lies(NAH), rechtDez: lies(RECHT_DEZ), nahDez: lies(NAH_DEZ) };
+  /*ENDPOOL*/
+
+  const ANZAHL = 12, app = document.getElementById("app");
+  let karten, nr, richtig, fehler;
+
+  function stapelNeu() {
+    /* 5 bis 7 rechtwinklige, davon 1 bis 2 mit Dezimalzahlen; der Rest knapp daneben */
+    const nRecht = U.ganz(5, 7), nRD = U.ganz(1, 2), nND = U.ganz(1, 2);
+    const zieh = (arr, n) => U.mische(arr).slice(0, n);
+    const liste = [].concat(zieh(POOL.recht, nRecht - nRD), zieh(POOL.rechtDez, nRD),
+      zieh(POOL.nah, ANZAHL - nRecht - nND), zieh(POOL.nahDez, nND));
+    /* Reihenfolge der Seiten mischen: die längste Seite steht nicht immer am Ende */
+    return U.mische(liste).map(z => ({ z, zeige: U.mische(z) }));
+  }
+
+  function start() { karten = stapelNeu(); nr = 0; richtig = 0; fehler = []; zeige(); window.scrollTo(0, 0); }
+
+  function kopf() {
+    return `<div class="leiste"><h1>Rechtwinklig oder nicht?</h1><span class="punkte">${richtig} / ${ANZAHL}</span></div>` +
+      `<div class="balken"><i style="width:${100 * nr / ANZAHL}%"></i></div>`;
+  }
+
+  function zeige() {
+    if (nr >= ANZAHL) return ende();
+    const k = karten[nr];
+    app.innerHTML = kopf() +
+      `<p class="anw">Wische nach rechts, wenn das Dreieck rechtwinklig ist, sonst nach links.</p>` +
+      `<p class="klein">Taschenrechner ist erlaubt.</p>` +
+      `<div class="stapel">${nr < ANZAHL - 1 ? '<div class="hinten"></div>' : ""}${nr < ANZAHL - 2 ? '<div class="hinten zwei"></div>' : ""}` +
+      `<div class="karte sk" tabindex="0" aria-label="Karte ${nr + 1} von ${ANZAHL}">` +
+      `<span class="marke li">nicht rechtwinklig</span><span class="marke re">rechtwinklig</span>` +
+      `<div class="nummer">Karte ${nr + 1} von ${ANZAHL}</div>` +
+      `<div class="seiten">${k.zeige.map(x => `<span>${zahl(x)}<small>cm</small></span>`).join("")}</div>` +
+      `<p class="frage2">Ist das Dreieck rechtwinklig?</p><div class="ergebnis"></div></div></div>` +
+      `<div class="knoepfe"><button class="knopf zwei" type="button" data-w="nein">← nicht rechtwinklig</button>` +
+      `<button class="knopf zwei" type="button" data-w="ja">rechtwinklig →</button></div>` +
+      `<div class="unten versteckt"><button class="knopf breit" type="button" data-weiter>Weiter</button></div>`;
+    const karte = app.querySelector(".sk");
+    app.querySelectorAll("[data-w]").forEach(b => b.onclick = () => entscheide(b.dataset.w === "ja"));
+    wischen(karte);
+  }
+
+  /* Wischen mit Finger oder Maus; vertikales Scrollen bleibt möglich (touch-action: pan-y) */
+  function wischen(el) {
+    const mLi = el.querySelector(".marke.li"), mRe = el.querySelector(".marke.re");
+    let id = null, x0 = 0, t0 = 0, dx = 0;
+    const setze = (x, glatt) => {
+      el.style.transition = glatt ? "transform .22s ease-out" : "none";
+      el.style.transform = x ? `translateX(${x}px) rotate(${x / 22}deg)` : "";
+      const s = Math.min(1, Math.abs(x) / 90);
+      mRe.style.opacity = x > 0 ? s : 0; mLi.style.opacity = x < 0 ? s : 0;
+    };
+    el.addEventListener("pointerdown", e => {
+      if (el.classList.contains("fertig") || id !== null || (e.pointerType === "mouse" && e.button !== 0)) return;
+      id = e.pointerId; x0 = e.clientX; t0 = performance.now(); dx = 0;
+      el.classList.add("zieht");
+      try { el.setPointerCapture(id); } catch (err) { /* egal */ }
+    });
+    el.addEventListener("pointermove", e => {
+      if (e.pointerId !== id) return;
+      dx = e.clientX - x0; setze(dx, false);
+    });
+    const los = e => {
+      if (e.pointerId !== id) return;
+      id = null; el.classList.remove("zieht");
+      const v = Math.abs(dx) / Math.max(1, performance.now() - t0);
+      if (e.type === "pointerup" && (Math.abs(dx) > 90 || (Math.abs(dx) > 40 && v > 0.5))) {
+        const ja = dx > 0;
+        setze(ja ? 140 : -140, true);
+        setTimeout(() => { setze(0, true); entscheide(ja); }, 160);
+      } else setze(0, true);
+    };
+    el.addEventListener("pointerup", los);
+    el.addEventListener("pointercancel", los);
+  }
+
+  function entscheide(ja) {
+    const karte = app.querySelector(".sk");
+    if (!karte || karte.classList.contains("fertig")) return;
+    karte.classList.add("fertig");
+    const k = karten[nr], r = pruefe(k.z), ok = ja === r.recht;
+    if (ok) richtig++; else fehler.push({ k, ja });
+    karte.querySelectorAll(".marke").forEach(m => m.style.opacity = 0);
+    karte.querySelector(".frage2").remove();
+    const e = karte.querySelector(".ergebnis");
+    e.className = "rueck " + (ok ? "ok" : "falsch");
+    e.innerHTML = (ok ? "Richtig: " : "Nicht ganz: ") + (r.recht ? "rechtwinklig." : "nicht rechtwinklig.") +
+      `<div class="rechnung">${weg(k.z)}</div>`;
+    app.querySelector(".punkte").textContent = `${richtig} / ${ANZAHL}`;
+    app.querySelector(".knoepfe").classList.add("versteckt");
+    const u = app.querySelector(".unten"); u.classList.remove("versteckt");
+    const w = u.querySelector("[data-weiter]");
+    w.textContent = nr === ANZAHL - 1 ? "Zum Ergebnis" : "Weiter";
+    w.focus({ preventScroll: true });
+    w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };
+    if (u.getBoundingClientRect().bottom > innerHeight) u.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  function ende() {
+    const q = richtig / ANZAHL, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
+    let h = `<div class="leiste"><h1>Rechtwinklig oder nicht?</h1></div><div class="karte ende"><div class="kopf">Geschafft</div>` +
+      `<div class="gross">${richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+      [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
+      fehler.map(f => `<li>${f.k.zeige.map(zahl).join(" cm, ")} cm<br><span class="klein">Deine Wahl: ${f.ja ? "rechtwinklig" : "nicht rechtwinklig"}</span>` +
+        `<div class="rechnung">${weg(f.k.z)}</div></li>`).join("") + "</ul>";
+    h += `<button class="knopf breit" type="button" data-neu>Neue Runde mit neuen Karten</button></div>`;
+    app.innerHTML = h;
+    app.querySelector("[data-neu]").onclick = start;
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") entscheide(true);
+    if (e.key === "ArrowLeft") entscheide(false);
+  });
+
+  start();
+})();
+</script>
+</body>
+</html>

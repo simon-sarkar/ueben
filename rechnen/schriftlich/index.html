@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Schriftlich rechnen</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  .stufen { display: grid; gap: 10px; margin: 4px 0 16px; }
+  .stufen button { display: flex; align-items: center; gap: 12px; min-height: 62px; padding: 10px 14px; border-radius: 12px;
+    background: var(--card); color: var(--ink); border: 2px solid var(--line); font: 600 1em var(--grund); text-align: left;
+    cursor: pointer; touch-action: manipulation; }
+  .stufen button .st { font-size: 1.25em; color: var(--akzent); width: 2.9em; flex: none; letter-spacing: 1px; }
+  .stufen button .was { flex: 1; line-height: 1.3; }
+  .stufen button[aria-pressed="true"] { border-color: var(--hue); background: var(--merke); }
+
+  .karte.rechnen { padding-left: 10px; padding-right: 10px; }
+  .karte.rechnen .frage { padding: 0 6px; font-size: 1em; }
+  /* Karopapier: Raster wird per JS an den Kästchen ausgerichtet */
+  .papier { background-color: #fff; border-radius: 4px; --karo: #D5E2EC;
+    background-image: linear-gradient(var(--karo) 1px, transparent 1px), linear-gradient(90deg, var(--karo) 1px, transparent 1px);
+    background-size: var(--z) var(--z); }
+  .blatt { display: grid; grid-template-columns: repeat(var(--C), var(--z)); grid-auto-rows: var(--z); }
+  .blatt > div { position: relative; display: flex; align-items: center; justify-content: center;
+    font: 600 calc(var(--z) * .62)/1 var(--kopf); color: var(--ink); }
+  .blatt > .u { box-shadow: inset 0 -2.5px 0 var(--ink); }
+  .blatt .ein, .blatt .ue { cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+  .blatt .ein::before { content: ""; position: absolute; inset: 2px; border: 2px solid #A9B6C2; border-radius: 5px; background: #fff; z-index: 0; }
+  .blatt .ue::before { content: ""; position: absolute; left: 22%; right: 22%; top: 38%; bottom: 6%; border: 1.5px dashed #A9B6C2; border-radius: 4px; background: #fff; }
+  .blatt .ein > span, .blatt .ue > span { position: relative; z-index: 1; }
+  .blatt .ue > span { font-size: calc(var(--z) * .4); margin-top: calc(var(--z) * .32); }
+  .blatt .ein.fokus::before { border: 3px solid var(--akzent); background: #FFF4E6; }
+  .blatt .ue.fokus::before { border: 2px solid var(--akzent); background: #FFF4E6; }
+  .blatt .ein.ok > span { color: var(--ok); }
+  .blatt .ein.ok::before { border-color: var(--ok); background: var(--okbg); }
+  .blatt .ein.falsch > span { color: var(--bad); }
+  .blatt .ein.falsch::before { border-color: var(--bad); background: var(--badbg); }
+  .blatt .lsg { color: var(--hue); }
+  .blatt .klein-ue { font-size: calc(var(--z) * .4); align-items: flex-end; padding-bottom: 2px; color: var(--muted); }
+  .loesung-titel { font-family: var(--kopf); font-weight: 600; margin: 14px 6px 6px; }
+
+  .tasten { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px;
+    user-select: none; -webkit-user-select: none; }
+  .tasten button { min-height: 52px; border-radius: 12px; border: 2px solid var(--line); background: var(--card); color: var(--ink);
+    font: 600 1.45em var(--kopf); cursor: pointer; touch-action: manipulation; padding: 0; }
+  .tasten button.an { background: var(--tint); }
+  .tasten .pruefen { grid-row: span 2; background: var(--hue); border-color: var(--hue); color: #fff; font-size: .95em; }
+  .tasten .pruefen.an { background: #7a420f; }
+  .tasten .null { grid-column: span 3; }
+  .tasten .zeile { font-size: .8em; line-height: 1.15; }
+  .tasten .unsichtbar { visibility: hidden; }
+  @media (max-height: 700px) { .tasten button { min-height: 48px; } .tasten { margin-top: 10px; } .leiste { margin-bottom: 8px; } .balken { margin-bottom: 10px; } }
+  .hinweis-leer:empty { display: none; }
+  .hinweis-leer { margin: 8px 6px 0; color: var(--bad); font-weight: 600; font-size: .95em; }
+  .knoepfe { display: grid; gap: 10px; margin-top: 16px; }
+  .ende .liste li { font-family: var(--kopf); font-weight: 600; }
+  .ende .liste .klein { font-family: var(--grund); font-weight: 400; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  const R = U.ganz, W = U.wahl, app = document.querySelector("#app");
+  const ANZAHL = 6;
+  const STUFEN = [
+    { st: "★", was: "Dreistellig, mal und geteilt durch einstellige Zahlen" },
+    { st: "★★", was: "Vierstellig, mal zweistellig" },
+    { st: "★★★", was: "Fünfstellig, dreistellig mal zweistellig" }
+  ];
+  const ziff = n => String(n).split("");
+  const len = n => String(n).length;
+
+  /* ---------- Überträge ---------- */
+  function uePlus(nums) {             // Übertrag je Stelle (Index = Stelle von rechts, Übertrag geht in Stelle i)
+    const D = Math.max(...nums.map(len)) + 1, ue = Array(D + 1).fill(0); let c = 0;
+    for (let i = 0; i < D; i++) {
+      let s = c; nums.forEach(n => s += Math.floor(n / 10 ** i) % 10);
+      c = Math.floor(s / 10); ue[i + 1] = c;
+    }
+    return ue;
+  }
+  function ueMinus(a, b) {            // Ergänzungsverfahren: Übertrag in Stelle i+1
+    const ue = Array(len(a) + 2).fill(0); let c = 0;
+    for (let i = 0; i < len(a); i++) {
+      const x = Math.floor(a / 10 ** i) % 10, y = Math.floor(b / 10 ** i) % 10 + c;
+      c = x < y ? 1 : 0; ue[i + 1] = c;
+    }
+    return ue;
+  }
+  function ueMal(a, e) {
+    const ue = Array(len(a) + 2).fill(0); let c = 0;
+    for (let i = 0; i < len(a); i++) { const p = (Math.floor(a / 10 ** i) % 10) * e + c; c = Math.floor(p / 10); ue[i + 1] = c; }
+    return ue;
+  }
+  const anzahlUe = ue => ue.filter(x => x > 0).length;
+
+  /* ---------- Aufgaben ---------- */
+  function plus(st) {
+    let nums;
+    for (;;) {
+      if (st === 0) nums = [R(100, 999), R(100, 999)];
+      else if (st === 1) nums = [R(1000, 9999), Math.random() < 0.6 ? R(1000, 9999) : R(100, 999)];
+      else nums = [R(10000, 99999), R(1000, 9999), R(100, 9999)];
+      if (anzahlUe(uePlus(nums)) >= (st === 0 ? 1 : 2)) break;
+    }
+    return { art: "plus", nums, erg: nums.reduce((s, n) => s + n, 0), text: nums.map(n => U.de(n)).join(" + ") };
+  }
+  function minus(st) {
+    let a, b;
+    for (;;) {
+      if (st === 0) { a = R(300, 999); b = R(100, a - 50); }
+      else if (st === 1) { a = Math.random() < 0.35 ? 1000 * R(3, 9) + R(1, 99) : R(2000, 9999); b = R(1000, a - 200); }
+      else { a = Math.random() < 0.35 ? 10000 * R(2, 9) + 100 * R(0, 9) + R(1, 9) : R(20000, 99999); b = R(1000, 9999); }
+      if (anzahlUe(ueMinus(a, b)) >= (st === 0 ? 1 : 2)) break;
+    }
+    return { art: "minus", a, b, erg: a - b, text: `${U.de(a)} − ${U.de(b)}` };
+  }
+  function mal(st) {
+    let a, b;
+    const ohneNull = n => !String(n).includes("0");
+    if (st === 0) { do { a = R(102, 989); } while (a % 10 === 0); b = R(3, 9); }
+    else if (st === 1) { do { a = R(23, 98); b = R(23, 98); } while (!ohneNull(a) || !ohneNull(b)); }
+    else { do { a = R(123, 987); b = R(23, 98); } while (a % 10 === 0 || !ohneNull(b)); }
+    return { art: "mal", a, b, erg: a * b, text: `${a} · ${b}` };
+  }
+  function geteilt(st) {
+    let d, q;
+    if (st === 0) { d = R(3, 9); q = R(Math.ceil(100 / d), Math.floor(999 / d)); }
+    else if (st === 1) { d = R(3, 9); q = R(Math.ceil(1000 / d), Math.floor(9999 / d)); }
+    else {
+      d = R(6, 9);
+      do { q = R(Math.ceil(10000 / d), 9999); if (Math.random() < 0.35) { const s = ziff(q); s[R(1, 2)] = "0"; q = Number(s.join("")); } }
+      while (q * d < 10000 || q * d > 99999);
+    }
+    return { art: "geteilt", a: q * d, d, erg: q, text: `${U.de(q * d)} : ${d}` };
+  }
+  const ERZ = { plus, minus, mal, geteilt };
+  window.SR = { ERZ, baue };   // für den Test
+
+  /* ---------- Blatt aufbauen ----------
+     Zelle: {} leer | {t} fest | {ein, soll} Ergebnis-Kästchen | {ue} Übertrag-Kästchen; u = Strich darunter */
+  const leer = C => Array.from({ length: C }, () => ({}));
+  function rechts(row, s, ende, extra) { const d = ziff(s); d.forEach((ch, i) => { row[ende - d.length + 1 + i] = Object.assign({ t: ch }, extra || {}); }); }
+  function strich(row, von, bis) { for (let c = von; c <= bis; c++) row[c].u = true; }
+  // Eingabezeile: Kästchen von Spalte von..bis, soll rechtsbündig (bis = letzte Ziffer)
+  function einZeile(C, von, bis, soll, name, lsg) {
+    const row = leer(C), s = ziff(soll);
+    for (let c = von; c <= bis; c++) {
+      const k = c - (bis - s.length + 1), ch = k >= 0 ? s[k] : "";
+      row[c] = lsg ? (ch ? { t: ch, k: "lsg" } : {}) : { ein: name, soll: ch };
+    }
+    return row;
+  }
+  function ueZeile(C, von, bis, ue, rechtsSpalte, lsg) {   // ue[i] gehört zur Spalte rechtsSpalte - i
+    const row = leer(C);
+    for (let c = von; c <= bis; c++) {
+      const i = rechtsSpalte - c, w = ue[i] || 0;
+      row[c] = lsg ? (w ? { t: String(w), k: "klein-ue" } : {}) : { ue: true };
+    }
+    return row;
+  }
+
+  function baue(a, lsg) {
+    if (a.art === "plus") {
+      const D = Math.max(...a.nums.map(len)) + 1, C = D + 1, rows = [];
+      a.nums.forEach((n, i) => { const r = leer(C); rechts(r, n, C - 1); if (i === a.nums.length - 1) r[0] = { t: "+" }; rows.push(r); });
+      const ur = ueZeile(C, 1, C - 2, uePlus(a.nums), C - 1, lsg); strich(ur, 0, C - 1); rows.push(ur);
+      rows.push(einZeile(C, 1, C - 1, a.erg, "erg", lsg));
+      return { C, rows, zeilen: ["erg"], richtung: "links" };
+    }
+    if (a.art === "minus") {
+      const C = len(a.a) + 1, r1 = leer(C), r2 = leer(C);
+      rechts(r1, a.a, C - 1); rechts(r2, a.b, C - 1); r2[0] = { t: "−" };
+      const ur = ueZeile(C, 1, C - 2, ueMinus(a.a, a.b), C - 1, lsg); strich(ur, 0, C - 1);
+      return { C, rows: [r1, r2, ur, einZeile(C, 1, C - 1, a.erg, "erg", lsg)], zeilen: ["erg"], richtung: "links" };
+    }
+    if (a.art === "mal") {
+      const la = len(a.a), lb = len(a.b), C = la + lb + 1, r0 = leer(C);
+      ziff(a.a).forEach((ch, i) => r0[i] = { t: ch }); r0[la] = { t: "·" }; ziff(a.b).forEach((ch, i) => r0[la + 1 + i] = { t: ch });
+      strich(r0, 0, C - 1);
+      const rows = [r0];
+      if (lb === 1) {
+        rows.push(ueZeile(C, 1, C - 2, ueMal(a.a, a.b), C - 1, lsg));
+        rows.push(einZeile(C, 1, C - 1, a.erg, "erg", lsg));
+        return { C, rows, zeilen: ["erg"], richtung: "links" };
+      }
+      const b = ziff(a.b).map(Number), tp1 = a.a * b[0], tp2 = a.a * b[1];
+      rows.push(einZeile(C, 1, C - 2, tp1, "tp1", lsg));
+      rows.push(einZeile(C, 2, C - 1, tp2, "tp2", lsg));
+      const ur = ueZeile(C, 1, C - 2, uePlus([tp1 * 10, tp2]), C - 1, lsg); strich(ur, 0, C - 1); rows.push(ur);
+      rows.push(einZeile(C, 1, C - 1, a.erg, "erg", lsg));
+      return { C, rows, zeilen: ["tp1", "tp2", "erg"], richtung: "links" };
+    }
+    // geteilt
+    const la = len(a.a), lq = len(a.erg);
+    if (!lsg) {
+      // bis dreistellig in einer Zeile, sonst Ergebnis darunter (sonst werden die Kästchen auf dem Handy zu klein)
+      const q = ziff(a.erg), eineZeile = la <= 3, C = eineZeile ? 2 * la + 3 : la + 2, r = leer(C);
+      ziff(a.a).forEach((ch, i) => r[i] = { t: ch }); r[la] = { t: ":" }; r[la + 1] = { t: String(a.d) };
+      const r2 = eineZeile ? r : leer(C), von = eineZeile ? la + 3 : 1;
+      r2[von - 1] = { t: "=" };
+      for (let c = von; c < von + la; c++) r2[c] = { ein: "erg", soll: q[c - von] || "" };
+      return { C, rows: eineZeile ? [r] : [r, r2], zeilen: ["erg"], richtung: "rechts" };
+    }
+    return baueDivision(a);
+  }
+
+  /* Lösungsweg der Division wie im Heft: Spalte 0 für Minuszeichen, Dividend ab Spalte 1 */
+  function baueDivision(a) {
+    const s = ziff(a.a), la = s.length, q = ziff(a.erg), lq = q.length, C = la + 4 + lq, rows = [], r0 = leer(C);
+    s.forEach((ch, i) => r0[i + 1] = { t: ch }); r0[la + 1] = { t: ":" }; r0[la + 2] = { t: String(a.d) }; r0[la + 3] = { t: "=" };
+    q.forEach((ch, i) => r0[la + 4 + i] = { t: ch, k: "lsg" });
+    rows.push(r0);
+    let k = 1; while (Number(s.slice(0, k).join("")) < a.d) k++;
+    let teil = s.slice(0, k).join(""), ende = k;
+    for (;;) {
+      const t = Number(teil), qi = Math.floor(t / a.d), p = qi * a.d, rest = t - p;
+      const rp = leer(C); rechts(rp, p, ende); rp[ende - len(p)] = { t: "−" };
+      strich(rp, ende - Math.max(teil.length, len(p)) + 1, ende); rows.push(rp);
+      const rr = leer(C);
+      if (ende < la) { teil = (rest ? String(rest) : "") + s[ende]; rechts(rr, teil, ende + 1); rows.push(rr); ende++; }
+      else { rechts(rr, rest, ende); rows.push(rr); break; }
+    }
+    return { C, rows };
+  }
+
+  /* Blatt als HTML; Raster und Kästchengröße passen sich der Breite an */
+  function zeichne(bl, container, mitIds) {
+    let h = "";
+    bl.rows.forEach((row, ri) => row.forEach((z, ci) => {
+      const kl = [z.u ? "u" : ""];
+      if (z.ein) { kl.push("ein"); h += `<div class="${kl.join(" ")}" data-id="${ri}-${ci}" data-zeile="${z.ein}" data-c="${ci}" role="button" aria-label="Kästchen"><span></span></div>`; }
+      else if (z.ue) { kl.push("ue"); h += `<div class="${kl.join(" ")}" data-id="${ri}-${ci}" data-ue="1" data-c="${ci}" role="button" aria-label="Übertrag"><span></span></div>`; }
+      else { if (z.k) kl.push(z.k); h += `<div class="${kl.join(" ").trim()}">${z.t ? U.esc(z.t) : ""}</div>`; }
+    }));
+    container.innerHTML = `<div class="blatt">${h}</div>`;
+    passe(container, bl.C, bl.rows.length);
+    container.querySelector(".blatt").dataset.zeilen = bl.rows.length;
+  }
+  function passe(container, C, zeilen) {
+    const breite = container.clientWidth;
+    const z = Math.max(22, Math.min(zeilen >= 4 && innerHeight < 720 ? 36 : 42, Math.floor((breite - 8) / C)));
+    const x0 = Math.floor((breite - C * z) / 2), y0 = Math.round(z * 0.5);
+    container.style.setProperty("--z", z + "px");
+    container.style.backgroundPosition = `${x0}px ${y0}px`;
+    container.style.padding = `${y0}px 0 ${y0}px ${x0}px`;
+    container.querySelector(".blatt").style.setProperty("--C", C);
+  }
+
+  /* ---------- Ablauf ---------- */
+  let stufe = 0, runde = null;
+  function start() {
+    let h = `<div class="leiste"><h1>Schriftlich rechnen</h1></div><div class="karte">` +
+      `<p class="frage">Wähle eine Stufe.</p><div class="stufen">`;
+    STUFEN.forEach((s, i) => h += `<button type="button" data-i="${i}" aria-pressed="${i === stufe}"><span class="st">${s.st}</span><span class="was">${s.was}</span></button>`);
+    h += `</div><button class="knopf breit" type="button" data-start>Start</button></div>`;
+    app.innerHTML = h;
+    app.querySelectorAll(".stufen button").forEach(b => b.onclick = () => {
+      stufe = Number(b.dataset.i);
+      app.querySelectorAll(".stufen button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    });
+    app.querySelector("[data-start]").onclick = neueRunde;
+  }
+  function neueRunde() {
+    const arten = ["plus", "minus", "mal", "geteilt"].concat(U.mische(["mal", "geteilt", "plus", "minus"]).slice(0, 2));
+    runde = { nr: 0, richtig: 0, fehler: [], arten };
+    aufgabe();
+  }
+
+  function aufgabe() {
+    if (runde.nr >= ANZAHL) return ende();
+    const a = ERZ[runde.arten[runde.nr]](stufe), bl = baue(a, false);
+    window.SR.aktuell = a;
+    const anw = a.art === "geteilt" ? "Schreibe das Ergebnis von links nach rechts."
+      : a.art === "mal" && bl.zeilen.length > 1 ? "Schreibe das Ergebnis von rechts nach links, Teilprodukte freiwillig."
+      : "Schreibe das Ergebnis von rechts nach links.";
+    app.innerHTML = `<div class="leiste"><h1>Schriftlich rechnen</h1><span class="punkte">${runde.richtig} / ${ANZAHL}</span></div>` +
+      `<div class="balken"><i style="width:${100 * runde.nr / ANZAHL}%"></i></div>` +
+      `<div class="karte rechnen"><p class="frage">${anw}</p><div class="papier" data-papier></div><div class="hinweis-leer"></div>` +
+      `<div class="tasten">` + ["7", "8", "9", "⌫", "4", "5", "6", "Z", "1", "2", "3", "P", "0"].map(k => {
+        const kl = k === "P" ? "pruefen" : k === "0" ? "null" : k === "Z" ? "zeile" + (bl.zeilen.length > 1 ? "" : " unsichtbar") : "";
+        const txt = k === "P" ? "Prüfen" : k === "Z" ? "nächste<br>Zeile" : k;
+        return `<button type="button" data-k="${k}" class="${kl}"${k === "⌫" ? ' aria-label="Löschen"' : ""}>${txt}</button>`;
+      }).join("") + `</div><div class="rueck versteckt"></div><div class="loesung"></div>` +
+      `<div class="unten versteckt"><button class="knopf" type="button" data-weiter>Weiter</button></div></div>`;
+    window.scrollTo(0, 0);
+    const papier = app.querySelector("[data-papier]");
+    zeichne(bl, papier);
+    const werte = {};                                 // id -> Ziffer
+    const zellen = [...papier.querySelectorAll(".ein, .ue")];
+    const nachZeile = n => zellen.filter(z => z.dataset.zeile === n)
+      .sort((x, y) => bl.richtung === "links" ? y.dataset.c - x.dataset.c : x.dataset.c - y.dataset.c);
+    const zeilen = bl.zeilen.map(nachZeile);
+    let fokus = zeilen[0][0], fertig = false;
+    const setzeFokus = z => { if (fokus) fokus.classList.remove("fokus"); fokus = z; z.classList.add("fokus"); };
+    const schreib = (z, v) => { werte[z.dataset.id] = v; z.querySelector("span").textContent = v; };
+    setzeFokus(fokus);
+    zellen.forEach(z => z.addEventListener("click", () => { if (!fertig) setzeFokus(z); }));
+
+    function weiterNach(z) {                            // nächstes Kästchen in Schreibrichtung
+      if (z.dataset.ue) {                             // Übertrag: zurück ins Ergebnis derselben Spalte
+        const e = zeilen[zeilen.length - 1].find(x => x.dataset.c === z.dataset.c);
+        return e && !werte[e.dataset.id] ? e : z;
+      }
+      const row = zeilen[bl.zeilen.indexOf(z.dataset.zeile)], i = row.indexOf(z);
+      return i < row.length - 1 ? row[i + 1] : z;          // Zeilenwechsel nur mit „nächste Zeile“
+    }
+    function taste(k) {
+      if (fertig) return;
+      app.querySelector(".hinweis-leer").textContent = "";
+      if (k === "P") return pruefe();
+      if (k === "Z") { const zi = (bl.zeilen.indexOf(fokus.dataset.zeile) + 1) % zeilen.length; return setzeFokus(zeilen[zi][0]); }
+      if (k === "⌫") {
+        if (werte[fokus.dataset.id]) return schreib(fokus, "");
+        if (fokus.dataset.ue) return;
+        const row = zeilen[bl.zeilen.indexOf(fokus.dataset.zeile)], i = row.indexOf(fokus);
+        if (i > 0) { setzeFokus(row[i - 1]); schreib(fokus, ""); }
+        return;
+      }
+      schreib(fokus, k);
+      setzeFokus(weiterNach(fokus));
+    }
+    function pruefe() {
+      const erg = zeilen[zeilen.length - 1];
+      if (!erg.some(z => werte[z.dataset.id])) { app.querySelector(".hinweis-leer").textContent = "Trag zuerst das Ergebnis ein."; return; }
+      fertig = true; fokus.classList.remove("fokus");
+      let ok = true;
+      zeilen.forEach((row, zi) => {
+        const istErg = zi === zeilen.length - 1;
+        if (!istErg && !row.some(z => werte[z.dataset.id])) return;     // freiwillige Zeile leer gelassen
+        row.forEach(z => {
+          const ist = werte[z.dataset.id] || "", soll = bl.rows[+z.dataset.id.split("-")[0]][+z.dataset.c].soll;
+          if (ist !== soll) { z.classList.add("falsch"); if (istErg) ok = false; }
+          else if (ist) z.classList.add("ok");
+        });
+      });
+      const eingabe = (bl.richtung === "links" ? erg.slice().reverse() : erg).map(z => werte[z.dataset.id] || "·").join("").replace(/^·+|·+$/g, "");
+      if (ok) runde.richtig++;
+      else runde.fehler.push({ text: a.text, loesung: U.de(a.erg), gegeben: eingabe.includes("·") ? eingabe.replace(/·/g, "_") : U.de(Number(eingabe)) });
+      app.querySelector(".tasten").classList.add("versteckt");
+      app.querySelector(".hinweis-leer").classList.add("versteckt");
+      app.querySelector(".punkte").textContent = `${runde.richtig} / ${ANZAHL}`;
+      const r = app.querySelector(".rueck"); r.classList.remove("versteckt"); r.classList.add(ok ? "ok" : "falsch");
+      r.innerHTML = ok ? W(["Richtig.", "Stimmt.", "Genau."]) : `Nicht ganz. ${a.text} = ${U.de(a.erg)}`;
+      if (!ok) {
+        const l = app.querySelector(".loesung");
+        l.innerHTML = `<div class="loesung-titel">So sieht die Rechnung aus:</div><div class="papier"></div>`;
+        zeichne(baue(a, true), l.querySelector(".papier"));
+      }
+      const u = app.querySelector(".unten"); u.classList.remove("versteckt");
+      const w = u.querySelector("[data-weiter]");
+      if (runde.nr === ANZAHL - 1) w.textContent = "Zum Ergebnis";
+      w.onclick = () => { runde.nr++; aufgabe(); };
+      if (u.getBoundingClientRect().bottom > innerHeight) u.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+    app.querySelectorAll(".tasten button").forEach(b => {
+      b.addEventListener("click", () => taste(b.dataset.k));
+      b.addEventListener("pointerdown", () => b.classList.add("an"));
+      ["pointerup", "pointerleave", "pointercancel"].forEach(t => b.addEventListener(t, () => b.classList.remove("an")));
+    });
+    runde.taste = taste;
+    runde.fertig = () => fertig;
+  }
+
+  /* Tastatur am Rechner */
+  addEventListener("keydown", e => {
+    if (!runde || !runde.taste || !app.querySelector(".tasten:not(.versteckt)")) return;
+    const k = /^[0-9]$/.test(e.key) ? e.key : { Backspace: "⌫", Enter: "P" }[e.key];
+    if (!k) return;
+    e.preventDefault(); runde.taste(k);
+  });
+  addEventListener("resize", () => app.querySelectorAll(".papier").forEach(p => {
+    const b = p.querySelector(".blatt"); if (b) passe(p, Number(b.style.getPropertyValue("--C")), Number(b.dataset.zeilen));
+  }));
+
+  function ende() {
+    const q = runde.richtig / ANZAHL, st = q >= 0.9 ? 3 : q >= 0.6 ? 2 : q >= 0.3 ? 1 : 0;
+    let h = `<div class="leiste"><h1>Schriftlich rechnen</h1></div><div class="karte ende"><div class="kopf">Geschafft · Stufe ${STUFEN[stufe].st}</div>` +
+      `<div class="gross">${runde.richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+      [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    if (runde.fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` + runde.fehler.map(f =>
+      `<li>${f.text} = ${f.loesung}<br><span class="klein">Deine Antwort: ${U.esc(f.gegeben)}</span></li>`).join("") + `</ul>`;
+    h += `<div class="knoepfe"><button class="knopf breit" type="button" data-neu>Neue Runde</button>` +
+      `<button class="knopf zwei breit" type="button" data-stufe>Stufe wechseln</button></div></div>`;
+    runde.taste = null;
+    app.innerHTML = h;
+    window.scrollTo(0, 0);
+    app.querySelector("[data-neu]").onclick = neueRunde;
+    app.querySelector("[data-stufe]").onclick = start;
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>
