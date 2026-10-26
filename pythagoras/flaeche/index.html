@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fläche berechnen</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* (g, h) in cm; schon auf Folie, AB oder in der Vorstunde: 12/7, 9/5, 8/5, 11/6, 7,5/4, 10/15, 10/5, 8/6 */
+  const GESPERRT = new Set(["12/7", "9/5", "8/5", "11/6", "7.5/4", "10/15", "10/5", "8/6"]);
+  function paar() {
+    let g, h;
+    do {
+      g = U.ganz(4, 16); h = U.ganz(3, 12);
+      if (Math.random() < 0.25) g += 0.5;
+    } while (GESPERRT.has(g + "/" + h));
+    return [g, h];
+  }
+
+  /* Dreieck mit waagrechter Grundseite g und Höhe h; die Spitze liegt mal innen, mal außen (stumpf) */
+  function bild(g, h, rechts) {
+    const W = 340, H = 240, r = 34;
+    const lage = rechts ? 0 : U.wahl([0.2, 0.35, 0.5, 0.7, 1.2, -0.25]);
+    const xs = [0, g, g * lage], minx = Math.min(...xs), maxx = Math.max(...xs);
+    const k = Math.min((W - 2 * r) / (maxx - minx), (H - 2 * r) / h);
+    const ox = (W - (maxx - minx) * k) / 2 - minx * k, oy = H - r;
+    const X = x => ox + x * k, Y = y => oy - y * k;
+    const A = [X(0), Y(0)], B = [X(g), Y(0)], C = [X(g * lage), Y(h)], F = [C[0], Y(0)];
+    let s = `<svg class="bild" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Dreieck mit Grundseite und Höhe">`;
+    s += `<polygon points="${[A, B, C].map(p => p.join(",")).join(" ")}" fill="#FFF8EC" stroke="#1F2433" stroke-width="3" stroke-linejoin="round"/>`;
+    if (lage < 0 || lage > 1) s += `<line x1="${Math.min(A[0], F[0])}" y1="${A[1]}" x2="${Math.max(B[0], F[0])}" y2="${A[1]}" stroke="#4E5566" stroke-width="2" stroke-dasharray="5 5"/>`;
+    s += `<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#E07A1F" stroke-width="5" stroke-linecap="round"/>`;
+    if (!rechts) s += `<line x1="${C[0]}" y1="${C[1]}" x2="${F[0]}" y2="${F[1]}" stroke="#145897" stroke-width="3" stroke-dasharray="7 5"/>`;
+    else s += `<line x1="${A[0]}" y1="${A[1]}" x2="${C[0]}" y2="${C[1]}" stroke="#145897" stroke-width="5" stroke-linecap="round"/>`;
+    const m = 14, sx = F[0] <= (A[0] + B[0]) / 2 ? 1 : -1;
+    s += `<polyline points="${F[0] + sx * m},${F[1]} ${F[0] + sx * m},${F[1] - m} ${F[0]},${F[1] - m}" fill="none" stroke="#1F2433" stroke-width="1.8"/>`;
+    s += `<text x="${(A[0] + B[0]) / 2}" y="${A[1] + 24}" font-size="18" text-anchor="middle" fill="#975214">g</text>`;
+    const aussen = lage < 0 || lage > 1, seite = aussen ? (lage < 0 ? -1 : 1) : sx;
+    const hx = C[0] + seite * 10;
+    s += `<text x="${hx}" y="${C[1] + (F[1] - C[1]) * 0.6}" font-size="18" text-anchor="${seite > 0 ? "start" : "end"}" dominant-baseline="central" fill="#145897" paint-order="stroke" stroke="#FFF8EC" stroke-width="6">h</text>`;
+    return s + `</svg><p class="kopf" style="text-align:center;margin:0 0 8px"><span style="color:#975214">g = ${U.de(g)} cm</span> &nbsp;&nbsp; <span style="color:#145897">h = ${U.de(h)} cm</span></p>`;
+  }
+
+  U.runde({
+    titel: "Fläche berechnen",
+    anzahl: 8,
+    erzeuge(i) {
+      const [g, h] = paar(), A = g * h / 2;
+      const weg = `A = g · h : 2 = ${U.de(g)} · ${U.de(h)} : 2 = ${U.de(g * h)} : 2 = <b>${U.de(A)} cm²</b>`;
+      if (i === 5 || i === 7) {      /* rechtwinklig: die Katheten sind Grundseite und Höhe */
+        return { key: "r" + g + "/" + h, typ: "zahl", frage: `Rechtwinkliges Dreieck mit den Katheten ${U.de(g)} cm und ${U.de(h)} cm. Berechne den Flächeninhalt.`,
+          bild: bild(g, h, true), loesung: A, einheit: "cm²", kurz: `Katheten ${U.de(g)} cm und ${U.de(h)} cm`,
+          weg: `Eine Kathete ist die Grundseite, die andere die Höhe.<br>${weg}` };
+      }
+      return { key: g + "/" + h, typ: "zahl", frage: "Berechne den Flächeninhalt des Dreiecks.", bild: bild(g, h, false),
+        loesung: A, einheit: "cm²", kurz: `g = ${U.de(g)} cm, h = ${U.de(h)} cm`, weg };
+    }
+  });
+})();
+</script>
+</body>
+</html>

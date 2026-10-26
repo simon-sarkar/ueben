@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dreiecke benennen</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Winkel-Sätze: Summe 180°, jede Art kommt vor; die Seitenart folgt aus gleichen Winkeln */
+  const SAETZE = [
+    [60, 60, 60], [80, 50, 50], [40, 70, 70], [20, 80, 80], [75, 60, 45], [65, 55, 60], [85, 35, 60],
+    [90, 45, 45], [90, 40, 50], [90, 25, 65], [90, 62, 28], [90, 15, 75],
+    [100, 40, 40], [120, 30, 30], [140, 20, 20], [105, 45, 30], [130, 30, 20], [95, 50, 35]
+  ];
+  const WART = w => Math.max(...w) === 90 ? "rechtwinklig" : Math.max(...w) > 90 ? "stumpfwinklig" : "spitzwinklig";
+  const SART = w => new Set(w).size === 1 ? "gleichseitig" : new Set(w).size === 2 ? "gleichschenklig" : "allgemein";
+  const WTXT = { spitzwinklig: "alle Winkel sind kleiner als 90°", rechtwinklig: "ein Winkel ist genau 90°", stumpfwinklig: "ein Winkel ist größer als 90°" };
+  const STXT = { gleichseitig: "alle drei Seiten sind gleich lang (alle Winkel 60°)", gleichschenklig: "zwei Seiten sind gleich lang (zwei Winkel sind gleich)", allgemein: "alle Seiten sind verschieden lang" };
+
+  function bild(w) {
+    /* Winkel auf die Ecken verteilen: A, B unten, C oben; das Bild ist maßstabsgetreu */
+    const [a, b, c] = U.mische(w);
+    const p = U.ausWinkeln(a, b, 100);
+    return U.dreieckSVG(p, {}, { winkel: { A: a + "°", B: b + "°", C: c + "°" }, rechterWinkel: a === 90 ? "A" : b === 90 ? "B" : c === 90 ? "C" : null, breite: 340, hoehe: 260, rand: 24 });
+  }
+
+  U.runde({
+    titel: "Dreiecke benennen",
+    anzahl: 10,
+    erzeuge(i) {
+      const w = U.wahl(SAETZE), nachWinkel = i % 2 === 0;
+      if (nachWinkel) {
+        const opt = ["spitzwinklig", "rechtwinklig", "stumpfwinklig"], r = WART(w);
+        return { key: "w" + w.join("-"), typ: "wahl", frage: "Wie heißt das Dreieck nach seinen <b>Winkeln</b>?", bild: bild(w),
+          optionen: opt, richtig: opt.indexOf(r), weg: `${r}: ${WTXT[r]}`, kurz: `Winkel ${w.join("°, ")}°: nach Winkeln?` };
+      }
+      const opt = ["gleichseitig", "gleichschenklig", "allgemein"], r = SART(w);
+      return { key: "s" + w.join("-"), typ: "wahl", frage: "Wie heißt das Dreieck nach seinen <b>Seiten</b>?", bild: bild(w),
+        optionen: opt, richtig: opt.indexOf(r), weg: `${r}: ${STXT[r]}`, kurz: `Winkel ${w.join("°, ")}°: nach Seiten?` };
+    }
+  });
+})();
+</script>
+</body>
+</html>

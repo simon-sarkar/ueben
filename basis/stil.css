@@ -1,0 +1,88 @@
+/* Gemeinsames Aussehen aller Übungen: Familie „Grundschule“, Hebel „Wellig“ (Tokens aus familien.yaml). */
+@font-face { font-family: "Lexend"; src: url("lexend.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  --ink: #1F2433; --muted: #4E5566; --line: #E6DFD3; --bg: #FFF8EC; --card: #fff;
+  --hue: #975214; --akzent: #E07A1F; --tint: #eee3d9;
+  --merke: #faeadb; --merke-t: #975214; --hinweis: #dbfafa; --hinweis-t: #107876;
+  --aufgabe: #faf9db; --aufgabe-t: #787510; --beispiel: #dbebfa; --beispiel-t: #145897;
+  --ok: #166534; --okbg: #ECFDF3; --bad: #B42318; --badbg: #FEF3F2;
+  --kopf: "Lexend", "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+  --grund: "Segoe UI", "Trebuchet MS", Roboto, Arial, sans-serif;
+  --welle: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22%3E%3Cpath d=%22M6 6.6C30 4.8 64 7.9 94 5.8C95.5 32 93.3 66 94.3 94.1C66 95.6 32 93.1 5.9 94.3C4.5 66 6.9 34 6 6.6Z%22 fill=%22none%22 stroke=%22%23975214%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/%3E%3C/svg%3E");
+  --welle-hell: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22%3E%3Cpath d=%22M6 6.6C30 4.8 64 7.9 94 5.8C95.5 32 93.3 66 94.3 94.1C66 95.6 32 93.1 5.9 94.3C4.5 66 6.9 34 6 6.6Z%22 fill=%22none%22 stroke=%22%23D9C8B4%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/%3E%3C/svg%3E");
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.6 var(--grund);
+  -webkit-tap-highlight-color: transparent; }
+h1, h2, h3, .kopf { font-family: var(--kopf); font-weight: 600; line-height: 1.25; margin: 0 0 .4em; }
+h1 { font-size: 1.5em; } h2 { font-size: 1.25em; }
+.seite { max-width: 640px; margin: 0 auto; padding: 16px 16px 40px; }
+
+/* Kopfzeile mit Titel und Fortschritt */
+.leiste { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; }
+.leiste h1 { font-size: 1.15em; margin: 0; flex: 1; }
+.punkte { font-family: var(--kopf); font-weight: 600; color: var(--hue); white-space: nowrap; }
+.balken { height: 10px; border-radius: 99px; background: var(--line); overflow: hidden; margin-bottom: 16px; }
+.balken > i { display: block; height: 100%; width: 0; background: var(--akzent); border-radius: 99px; transition: width .3s; }
+
+/* Karten und Kästen mit welligem Rand */
+
+.karte { background: var(--card); background-clip: padding-box; padding: 18px 18px; margin: 0 0 14px;
+  border: 2px solid var(--hue); border-image: var(--welle) 12 / 10px stretch; border-radius: 6px; }
+.karte.leise { border-color: #D9C8B4; border-image: var(--welle-hell) 12 / 10px stretch; }
+.kasten { background-clip: padding-box; padding: 14px 16px; margin: 0 0 14px; border-radius: 6px; border: 2px solid transparent;
+  border-image: var(--welle) 12 / 10px stretch; }
+.kasten.merke { background: var(--merke); } .kasten.hinweis { background: var(--hinweis); }
+.kasten.aufgabe { background: var(--aufgabe); } .kasten.beispiel { background: var(--beispiel); }
+.kasten .titel { font-family: var(--kopf); font-weight: 600; margin-bottom: 4px; }
+.kasten.merke .titel { color: var(--merke-t); } .kasten.hinweis .titel { color: var(--hinweis-t); }
+.kasten.aufgabe .titel { color: var(--aufgabe-t); } .kasten.beispiel .titel { color: var(--beispiel-t); }
+.frage { font-size: 1.12em; margin: 0 0 12px; }
+.nr { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--hue); color: #fff; font-family: var(--kopf); font-weight: 600; margin-right: 8px; flex: none; }
+.bild { display: block; margin: 6px auto 12px; max-width: 100%; height: auto; }
+.bild text { font-family: var(--kopf); font-weight: 600; }
+
+/* Knöpfe */
+.knopf { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
+  padding: 10px 20px; border: 0; border-radius: 14px; background: var(--hue); color: #fff;
+  font: 600 1em var(--kopf); cursor: pointer; text-decoration: none; touch-action: manipulation; }
+.knopf:active { transform: translateY(1px); }
+.knopf.zwei { background: var(--card); color: var(--hue); box-shadow: inset 0 0 0 2px var(--hue); }
+.knopf[disabled] { opacity: .45; cursor: default; }
+.knopf.breit { width: 100%; }
+.wahl { display: grid; gap: 10px; margin: 6px 0 4px; }
+.wahl.zwei-spalten { grid-template-columns: 1fr 1fr; }
+.wahl button { min-height: 52px; padding: 10px 14px; border-radius: 12px; background: var(--card); color: var(--ink);
+  border: 2px solid var(--line); font: 600 1em var(--grund); text-align: left; cursor: pointer; touch-action: manipulation; }
+.wahl button.ok { background: var(--okbg); border-color: var(--ok); color: var(--ok); }
+.wahl button.falsch { background: var(--badbg); border-color: var(--bad); color: var(--bad); }
+.wahl button:disabled { cursor: default; }
+
+/* Eingabe */
+.eingabe { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.eingabe input { font: 600 1.2em var(--grund); width: 9em; max-width: 100%; min-height: 52px; padding: 8px 12px;
+  border: 2px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
+.eingabe input:focus { outline: 3px solid var(--akzent); outline-offset: 1px; }
+.eingabe .einheit { font-weight: 600; color: var(--muted); }
+
+/* Rückmeldung */
+.rueck { margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-weight: 600; }
+.rueck.ok { background: var(--okbg); color: var(--ok); }
+.rueck.falsch { background: var(--badbg); color: var(--bad); }
+.rueck .weg { font-weight: 400; color: var(--ink); margin-top: 6px; }
+.unten { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* Ende */
+.ende { text-align: center; }
+.ende .gross { font-family: var(--kopf); font-weight: 600; font-size: 2.6em; color: var(--hue); margin: 6px 0; }
+.sterne { font-size: 2.2em; letter-spacing: 6px; color: var(--akzent); }
+.sterne .aus { color: var(--line); }
+.liste { text-align: left; margin: 14px 0; padding: 0; list-style: none; }
+.liste li { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.klein { font-size: .9em; color: var(--muted); }
+.versteckt { display: none !important; }
+sup { font-size: .7em; line-height: 0; }
+@media (max-width: 380px) { body { font-size: 17px; } .karte { padding: 14px 12px; } }

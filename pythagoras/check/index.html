@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Teste dich: Dreiecke und Pythagoras</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  const BUCH = "abcdefghkmnpqrstuvwxyz".split("");
+  /* rechtwinklige Tripel (nicht auf Folie/AB) und knapp daneben */
+  const JA = [[15, 20, 25], [18, 24, 30], [12, 35, 37], [24, 32, 40], [14, 48, 50], [11, 60, 61], [27, 36, 45], [30, 40, 50],
+              [2.1, 2.8, 3.5], [0.9, 1.2, 1.5], [1.6, 3, 3.4], [16, 63, 65], [33, 56, 65]];
+  const NEIN = [[8, 12, 14], [7, 8, 11], [13, 14, 19], [9, 13, 16], [12, 15, 19], [6, 11, 12], [14, 17, 22], [2, 3, 3.5], [10, 13, 16], [15, 16, 22]];
+  const WINKEL = [[50, 60, 70], [90, 35, 55], [115, 40, 25], [30, 75, 75], [90, 45, 45], [130, 25, 25], [60, 60, 60], [90, 20, 70], [95, 45, 40]];
+  const q = x => Math.round(x * x * 100) / 100;
+
+  const TYPEN = [
+    function art() {
+      const w = U.wahl(WINKEL), opt = ["spitzwinklig", "rechtwinklig", "stumpfwinklig"];
+      const r = Math.max(...w) === 90 ? 1 : Math.max(...w) > 90 ? 2 : 0;
+      return { key: "w" + w, typ: "wahl", frage: `Ein Dreieck hat die Winkel ${w.join("°, ")}°. Wie heißt es nach seinen Winkeln?`,
+        optionen: opt, richtig: r, weg: r === 1 ? "Ein Winkel ist genau 90°." : r === 2 ? "Ein Winkel ist größer als 90°." : "Alle Winkel sind kleiner als 90°." };
+    },
+    function flaeche() {
+      const g = U.ganz(5, 14), h = U.ganz(3, 11), A = g * h / 2;
+      return { key: "f" + g + "/" + h, typ: "zahl", frage: `Ein Dreieck hat die Grundseite g = ${g}&nbsp;cm und die Höhe h = ${h}&nbsp;cm. Berechne den Flächeninhalt.`,
+        loesung: A, einheit: "cm²", weg: `A = g · h : 2 = ${g} · ${h} : 2 = <b>${U.de(A)} cm²</b>` };
+    },
+    function hypotenuse() {
+      const n = U.mische(BUCH).slice(0, 3), p = U.rechtwinklig(U.ganz(4, 9), U.ganz(4, 9), U.ganz(0, 359), Math.random() < .5);
+      const bild = U.dreieckSVG(p, { BC: n[0], CA: n[1], AB: n[2] }, { rechterWinkel: "C", breite: 300, hoehe: 220 });
+      const opt = U.mische(n);
+      return { key: "h" + n.join(""), typ: "wahl", frage: "Welche Seite ist die Hypotenuse?", bild, optionen: opt, richtig: opt.indexOf(n[2]), spalten: 2,
+        weg: `${n[2]} liegt dem rechten Winkel gegenüber.` };
+    },
+    function gleichung() {
+      const n = U.mische(BUCH).slice(0, 3), p = U.rechtwinklig(U.ganz(4, 9), U.ganz(4, 9), U.ganz(0, 359), Math.random() < .5);
+      const bild = U.dreieckSVG(p, { BC: n[0], CA: n[1], AB: n[2] }, { rechterWinkel: "C", breite: 300, hoehe: 220 });
+      const h = U.hoch2, rich = `${h(n[0])} + ${h(n[1])} = ${h(n[2])}`;
+      const opt = U.mische([rich, `${h(n[0])} + ${h(n[2])} = ${h(n[1])}`, `${h(n[1])} + ${h(n[2])} = ${h(n[0])}`]);
+      return { key: "g" + n.join(""), typ: "wahl", frage: "Welche Gleichung stimmt für dieses Dreieck?", bild, optionen: opt, richtig: opt.indexOf(rich),
+        weg: `Kathete² + Kathete² = Hypotenuse²: ${rich}`, loesungText: rich };
+    },
+    function pruefen() {
+      const ja = Math.random() < 0.5, t = U.wahl(ja ? JA : NEIN), s = U.mische(t), [a, b, c] = t.slice().sort((x, y) => x - y);
+      const links = q(a) + q(b), rechts = q(c);
+      return { key: "p" + t, typ: "wahl", frage: `Ein Dreieck hat die Seiten ${s.map(x => U.de(x) + " cm").join("; ")}. Ist es rechtwinklig?`,
+        optionen: ["ja, rechtwinklig", "nein"], richtig: ja ? 0 : 1, spalten: 2,
+        weg: `${U.de(a)}² + ${U.de(b)}² = ${U.de(q(a))} + ${U.de(q(b))} = ${U.de(links)} · ${U.de(c)}² = ${U.de(rechts)} → ${ja ? "rechtwinklig" : "nicht rechtwinklig"}` };
+    },
+    function summe() {
+      const t = U.wahl(JA.concat(NEIN)), [a, b] = t.slice().sort((x, y) => x - y);
+      return { key: "s" + t, typ: "zahl", frage: `Die kurzen Seiten eines Dreiecks sind ${U.de(a)}&nbsp;cm und ${U.de(b)}&nbsp;cm lang. Berechne ${U.de(a)}² + ${U.de(b)}².`,
+        loesung: q(a) + q(b), weg: `${U.de(a)}² + ${U.de(b)}² = ${U.de(q(a))} + ${U.de(q(b))} = <b>${U.de(q(a) + q(b))}</b>` };
+    }
+  ];
+  const PLAN = [0, 2, 1, 3, 4, 5, 2, 4, 3, 4];     /* 10 Aufgaben, vom Leichten zum Schweren */
+  U.runde({ titel: "Teste dich", anzahl: PLAN.length, erzeuge: i => TYPEN[PLAN[i]]() });
+})();
+</script>
+</body>
+</html>
