@@ -46,8 +46,8 @@
     const [na, nb, nc] = U.mische(g.slice(0, 3)), extra = g[3];
     const r = 1 + Math.random() * 1.2, tausch = Math.random() < 0.5;
     const p = U.rechtwinklig(tausch ? 100 * r : 100, tausch ? 100 : 100 * r, U.ganz(0, 359), Math.random() < 0.5);
-    /* Ablenker: abwechselnd ein Minus oder ein Buchstabe, der nicht zum Dreieck gehört */
-    const ablenker = i % 2 === 0 ? { art: "q", w: extra } : { art: "o", w: MINUS };
+    /* Ablenker: ein Buchstabe, der nicht zum Dreieck gehört (kein Minus: umgestellte Gleichungen kommen erst später) */
+    const ablenker = { art: "q", w: extra };
     const steine = U.mische([{ art: "q", w: na }, { art: "q", w: nb }, { art: "q", w: nc }, { art: "o", w: "+" }, { art: "o", w: "=" }, ablenker])
       .map((s, k) => Object.assign(s, { id: k }));
     /* C ist der rechte Winkel: BC = na und CA = nb sind Katheten, AB = nc ist die Hypotenuse */
