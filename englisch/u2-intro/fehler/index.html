@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>What’s wrong?</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .satz { display: block; font-size: 1.1em; line-height: 1.6; }
+  .eingabe input.textfeld { flex: 1 1 100%; }
+  .eingabe input.textfeld::placeholder { color: #9A8F80; }
+  .eingabe .knopf { flex: 1 1 auto; }
+  .weg s { color: var(--bad); }
+  .weg b { color: var(--ok); }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* f = falsch geschriebenes Wort im Satz, r = richtige Schreibweise(n), erste = Anzeige; je Runde jedes Wort höchstens einmal */
+  const AUFG = [
+    { w: "independent", s: "My brother wants to be independant, so he is looking for his own flat.", f: "independant", r: ["independent"] },
+    { w: "independent", s: "My grandma is 80, but she is still very indipendent.", f: "indipendent", r: ["independent"] },
+    { w: "Indian", s: "In my sister’s class there is an Indien girl called Asha.", f: "Indien", r: ["Indian"] },
+    { w: "lead", s: "Yesterday the guide leaded us through the old town.", f: "leaded", r: ["led"] },
+    { w: "pollution", s: "Traffic is a big reason for the polution in our town.", f: "polution", r: ["pollution"] },
+    { w: "pollution", s: "The pollusion in this lake is so bad that nobody can swim in it.", f: "pollusion", r: ["pollution"] },
+    { w: "waste", s: "There is a lot of wast in the park after the weekend.", f: "wast", r: ["waste"] },
+    { w: "arranged marriage", s: "Their parents planned everything. It was an arranged mariage.", f: "mariage", r: ["marriage", "arranged marriage"] },
+    { w: "wedding", s: "We bought a present for my uncle’s weding.", f: "weding", r: ["wedding"] },
+    { w: "several", s: "I have sevral good friends in my new class.", f: "sevral", r: ["several"] },
+    { w: "several", s: "We waited for the bus for severel minutes.", f: "severel", r: ["several"] },
+    { w: "environmental", s: "Our class watched a film about enviromental problems.", f: "enviromental", r: ["environmental"] },
+    { w: "slum", s: "The family lives in a slumm near the big station.", f: "slumm", r: ["slum"] },
+    { w: "the British", s: "The Brittish drink a lot of tea.", f: "Brittish", r: ["British", "the British"] }
+  ];
+  let reihe = [], gestartet = false;
+  function neueRunde() {
+    const woerter = U.mische([...new Set(AUFG.map(a => a.w))]).slice(0, 10);
+    reihe = woerter.map(w => U.wahl(AUFG.filter(a => a.w === w)));
+  }
+
+  U.runde({
+    titel: "What’s wrong?",
+    anzahl: 10,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0) { if (gestartet || !reihe.length) neueRunde(); gestartet = true; }
+      const a = reihe[i];
+      return {
+        key: a.s, typ: "text",
+        frage: `<span class="anw">One word is wrong. Write it correctly.</span><span class="satz">${U.esc(a.s)}</span>`,
+        hinweis: "correct word", loesung: a.r,
+        weg: `<s>${a.f}</s> → <b>${a.r[0]}</b><br>${U.esc(a.s).replace(a.f, `<b>${a.r[0]}</b>`)}`,
+        kurz: U.esc(a.s), loesungText: a.r[0]
+      };
+    }
+  });
+})();
+</script>
+</body>
+</html>

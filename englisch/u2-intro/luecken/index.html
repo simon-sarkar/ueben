@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Use the new words</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .satz { display: block; line-height: 1.7; }
+  .luecke { display: inline-block; font-family: var(--kopf); color: var(--hue); letter-spacing: -1px; white-space: nowrap; }
+  /* Wortkasten: Wörter als Kärtchen in einem gestrichelten Rahmen */
+  .wahl { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border: 2px dashed var(--line); border-radius: 12px; background: var(--bg); }
+  .wahl button { flex: 0 1 auto; min-height: 48px; padding: 8px 14px; text-align: center; border-radius: 10px; }
+  .weg b { color: var(--hue); }
+  .weg .klein { display: block; margin-top: 4px; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Wortkasten-Formen der neuen Wörter (Verb nur, wenn der Satz ein Verb braucht) */
+  const KASTEN = ["slum", "Indian", "protest", "the British", "independent", "environmental", "pollution", "waste",
+    "arranged marriage", "wedding", "several"];
+  const DE = { slum: "Slum, Elendsviertel", Indian: "Inder, Inderin, indisch", lead: "anführen, führen, leiten",
+    protest: "Protest, Demonstration", "the British": "die Briten", independent: "unabhängig", environmental: "Umwelt-",
+    pollution: "Verschmutzung", waste: "Abfall", "arranged marriage": "arrangierte Hochzeit", wedding: "Hochzeit",
+    several: "mehrere, einige, verschiedene" };
+  /* Sätze: w = Grundwort, l = Lösung (genau eine Form), s = Satz mit ___ , nicht = Wörter, die auch passen könnten
+     (kommen nicht in den Kasten), extra = zusätzliche Ablenker (andere Verbform) */
+  const SAETZE = [
+    { w: "slum", l: "slum", s: "The family lives in a ___ at the edge of the city. Their house is made of old wood and plastic." },
+    { w: "slum", l: "slum", s: "Many children in this ___ can’t go to school because their families are very poor." },
+    { w: "Indian", l: "Indian", s: "Priya’s family comes from India. She is ___.", nicht: ["independent"] },
+    { w: "Indian", l: "Indian", s: "We went to an ___ restaurant and had food from India.", nicht: ["independent", "environmental"] },
+    { w: "lead", l: "led", s: "Our teacher ___ the class trip to the museum last week.", extra: ["lead"] },
+    { w: "lead", l: "lead", s: "Who is going to ___ the group on the walk tomorrow?", extra: ["led"], nicht: ["protest", "waste"] },
+    { w: "protest", l: "protest", s: "The students had a ___ in front of the school because they wanted more sports lessons.", nicht: ["wedding"] },
+    { w: "protest", l: "protests", s: "Last weekend there were ___ in many towns. People were angry about the new prices.", nicht: ["several"] },
+    { w: "the British", l: "the British", s: "Fish and chips is a typical meal for ___. You can buy it in every town in Great Britain.", nicht: ["Indian"] },
+    { w: "the British", l: "the British", s: "My uncle lives in London. He says ___ talk about the weather a lot." },
+    { w: "independent", l: "independent", s: "Tom is 19 now. He has his own flat and a job, so he is ___ from his parents." },
+    { w: "independent", l: "independent", s: "Lisa doesn’t want help with her homework. She wants to be ___ and do it alone.", nicht: ["Indian"] },
+    { w: "environmental", l: "environmental", s: "Our class works on ___ projects: we collect rubbish in the park and plant trees.", nicht: ["Indian", "independent", "several", "waste"] },
+    { w: "environmental", l: "environmental", s: "In science lessons we talk about ___ problems like dirty rivers and dying forests.", nicht: ["Indian", "independent", "several", "waste", "pollution"] },
+    { w: "pollution", l: "pollution", s: "The fish in the river are dying because of the ___ from the factory.", nicht: ["waste"] },
+    { w: "pollution", l: "pollution", s: "There is so much ___ in the air that you can’t see the mountains.", nicht: ["waste"] },
+    { w: "waste", l: "waste", s: "We make a lot of ___ at home. Every week we fill two big bins.", nicht: ["pollution"] },
+    { w: "waste", l: "waste", s: "After the festival there was ___ everywhere: bottles, paper and old food.", nicht: ["pollution"] },
+    { w: "arranged marriage", l: "arranged marriage", s: "In an ___, the parents choose the husband or wife for their son or daughter.", nicht: ["wedding"] },
+    { w: "arranged marriage", l: "arranged marriage", s: "Ravi didn’t choose his wife himself. His parents chose her. It was an ___.", nicht: ["wedding"] },
+    { w: "wedding", l: "wedding", s: "We danced all night at my cousin’s ___.", nicht: ["arranged marriage", "protest"] },
+    { w: "wedding", l: "wedding", s: "Anna and Ben are getting married in May. They invited 80 people to their ___.", nicht: ["arranged marriage", "protest"] },
+    { w: "several", l: "several", s: "I called you ___ times, but you didn’t answer." },
+    { w: "several", l: "several", s: "Our town has ___ parks, so there are lots of places to play football.", nicht: ["Indian", "independent", "environmental"] }
+  ];
+  const LUECKE = `<span class="luecke" aria-label="gap">____________</span>`;
+
+  let auswahl = [], gestartet = false;
+  function neueRunde() {
+    /* 8 verschiedene Wörter, je ein zufälliger Satz */
+    const woerter = U.mische(Object.keys(DE)).slice(0, 8);
+    auswahl = woerter.map(w => U.wahl(SAETZE.filter(x => x.w === w)));
+  }
+
+  U.runde({
+    titel: "Use the new words",
+    anzahl: 8,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0) { if (gestartet || !auswahl.length) neueRunde(); gestartet = true; }
+      const a = auswahl[i];
+      const verbot = new Set([a.w, a.l].concat(a.nicht || []));
+      const ab = U.mische(KASTEN.filter(k => !verbot.has(k))).slice(0, 5 - (a.extra || []).length).concat(a.extra || []);
+      const opt = U.mische([a.l].concat(ab));
+      const satz = U.esc(a.s).replace("___", LUECKE);
+      const voll = U.esc(a.s).replace("___", `<b>${a.l}</b>`);
+      const grund = a.w === "lead" ? "to lead, led, led" : a.w;
+      return { key: a.s, typ: "wahl", frage: `<span class="anw">Tap the missing word.</span><span class="satz">${satz}</span>`,
+        optionen: opt, richtig: opt.indexOf(a.l), weg: `${voll}<span class="klein">${grund} – ${DE[a.w]}</span>`,
+        kurz: U.esc(a.s).replace("___", "____________") };
+    }
+  });
+})();
+</script>
+</body>
+</html>

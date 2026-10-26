@@ -101,7 +101,16 @@
      cfg: {titel, anzahl, erzeuge(i, schluessel:Set) -> aufgabe, ziel: Element}
      aufgabe: {key, typ:'wahl'|'zahl'|'tipp', frage (HTML), bild (SVG/HTML), optionen [], richtig, loesung, toleranz,
                einheit, weg (HTML: Rechenweg/Erklärung), spalten:2} */
+  U.TEXTE = {
+    de: { ok: ["Richtig.", "Stimmt.", "Genau.", "Gut gemacht."], falsch: "Nicht ganz.", pruefen: "Prüfen", weiter: "Weiter", zahl: "Zahl eingeben",
+          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Neue Runde mit neuen Aufgaben", von: "von" },
+    en: { ok: ["Right.", "Correct.", "Well done.", "Yes."], falsch: "Not quite.", pruefen: "Check", weiter: "Next", zahl: "Type a number",
+          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "New round", von: "of" }
+  };
+  /* Text vergleichen: Groß/klein, Leerzeichen, Apostroph-Varianten egal */
+  U.textGleich = (a, b) => { const n = x => String(x).trim().toLowerCase().replace(/[’‘`´]/g, "'").replace(/\s+/g, " "); return n(a) === n(b); };
   U.runde = cfg => {
+    const L = U.TEXTE[cfg.sprache || "de"];
     const ziel = cfg.ziel || document.querySelector("#app");
     let nr = 0, richtig = 0, fehler = [], keys = new Set(), aufg = null;
     const kopf = () => `<div class="leiste"><h1>${cfg.titel}</h1><span class="punkte">${richtig} / ${cfg.anzahl}</span></div>` +
@@ -117,8 +126,9 @@
       aufg = neu();
       let h = kopf() + `<div class="karte"><div class="frage">${aufg.frage}</div>${aufg.bild || ""}`;
       if (aufg.typ === "wahl") h += `<div class="wahl${aufg.spalten === 2 ? " zwei-spalten" : ""}">` + aufg.optionen.map((o, i) => `<button type="button" data-i="${i}">${o}</button>`).join("") + "</div>";
-      if (aufg.typ === "zahl") h += `<form class="eingabe" autocomplete="off"><input inputmode="decimal" enterkeyhint="done" aria-label="Antwort" placeholder="?">${aufg.einheit ? `<span class="einheit">${aufg.einheit}</span>` : ""}<button class="knopf" type="submit">Prüfen</button></form>`;
-      h += `<div class="rueck versteckt"></div><div class="unten versteckt"><button class="knopf" type="button" data-weiter>Weiter</button></div></div>`;
+      if (aufg.typ === "zahl") h += `<form class="eingabe" autocomplete="off"><input inputmode="decimal" enterkeyhint="done" aria-label="Antwort" placeholder="?">${aufg.einheit ? `<span class="einheit">${aufg.einheit}</span>` : ""}<button class="knopf" type="submit">${L.pruefen}</button></form>`;
+      if (aufg.typ === "text") h += `<form class="eingabe" autocomplete="off"><input class="textfeld" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Antwort" placeholder="${aufg.hinweis || ""}" style="width:100%"><button class="knopf" type="submit">${L.pruefen}</button></form>`;
+      h += `<div class="rueck versteckt"></div><div class="unten versteckt"><button class="knopf" type="button" data-weiter>${L.weiter}</button></div></div>`;
       ziel.innerHTML = h;
       const karte = ziel.querySelector(".karte");
       if (aufg.typ === "wahl") karte.querySelectorAll(".wahl button").forEach(b => b.onclick = () => {
@@ -133,9 +143,20 @@
         f.onsubmit = e => {
           e.preventDefault();
           const v = U.zahl(inp.value);
-          if (isNaN(v)) { inp.value = ""; inp.placeholder = "Zahl eingeben"; return; }
+          if (isNaN(v)) { inp.value = ""; inp.placeholder = L.zahl; return; }
           inp.disabled = true; f.querySelector("button").disabled = true;
           werte(U.gleich(v, aufg.loesung, aufg.toleranz), U.de(v));
+        };
+      }
+      if (aufg.typ === "text") {
+        const f = karte.querySelector("form"), inp = f.querySelector("input");
+        setTimeout(() => inp.focus({ preventScroll: true }), 50);
+        f.onsubmit = e => {
+          e.preventDefault();
+          if (!inp.value.trim()) return;
+          inp.disabled = true; f.querySelector("button").disabled = true;
+          const loes = [].concat(aufg.loesung);
+          werte(loes.some(x => U.textGleich(inp.value, x)), U.esc(inp.value.trim()));
         };
       }
       if (aufg.typ === "tipp") karte.querySelectorAll("[data-wahl]").forEach(el => el.addEventListener("click", () => {
@@ -146,9 +167,9 @@
       }));
       function werte(ok, gegeben) {
         karte.dataset.fertig = "1";
-        if (ok) richtig++; else fehler.push({ frage: aufg.kurz || aufg.frage, gegeben, loesung: aufg.loesungText || (aufg.typ === "wahl" ? aufg.optionen[aufg.richtig] : aufg.typ === "zahl" ? U.de(aufg.loesung) + (aufg.einheit ? " " + aufg.einheit : "") : aufg.richtig) });
+        if (ok) richtig++; else fehler.push({ frage: aufg.kurz || aufg.frage, gegeben, loesung: aufg.loesungText || (aufg.typ === "wahl" ? aufg.optionen[aufg.richtig] : aufg.typ === "zahl" ? U.de(aufg.loesung) + (aufg.einheit ? " " + aufg.einheit : "") : aufg.typ === "text" ? [].concat(aufg.loesung)[0] : aufg.richtig) });
         const r = karte.querySelector(".rueck"); r.classList.remove("versteckt"); r.classList.add(ok ? "ok" : "falsch");
-        r.innerHTML = (ok ? U.wahl(["Richtig.", "Stimmt.", "Genau.", "Gut gemacht."]) : "Nicht ganz.") + (aufg.weg ? `<div class="weg">${aufg.weg}</div>` : "");
+        r.innerHTML = (ok ? U.wahl(L.ok) : L.falsch) + (aufg.weg ? `<div class="weg">${aufg.weg}</div>` : "");
         ziel.querySelector(".punkte").textContent = `${richtig} / ${cfg.anzahl}`;
         const u = karte.querySelector(".unten"); u.classList.remove("versteckt");
         const w = u.querySelector("[data-weiter]"); w.focus({ preventScroll: true }); w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };
@@ -157,12 +178,12 @@
     }
     function ende() {
       const q = richtig / cfg.anzahl, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
-      let h = `<div class="leiste"><h1>${cfg.titel}</h1></div><div class="karte ende"><div class="kopf">Geschafft</div>` +
-        `<div class="gross">${richtig} von ${cfg.anzahl}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+      let h = `<div class="leiste"><h1>${cfg.titel}</h1></div><div class="karte ende"><div class="kopf">${L.fertig}</div>` +
+        `<div class="gross">${richtig} ${L.von} ${cfg.anzahl}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
         [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
-      if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
-        fehler.map(f => `<li>${f.frage}<br><span class="klein">Deine Antwort: ${f.gegeben} · richtig: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
-      h += `<button class="knopf breit" type="button" data-neu>Neue Runde mit neuen Aufgaben</button></div>`;
+      if (fehler.length) h += `<p class="klein">${L.nochmal}</p><ul class="liste">` +
+        fehler.map(f => `<li>${f.frage}<br><span class="klein">${L.deine}: ${f.gegeben} · ${L.richtig}: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
+      h += `<button class="knopf breit" type="button" data-neu>${L.neu}</button></div>`;
       ziel.innerHTML = h;
       ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); zeige(); window.scrollTo(0, 0); };
     }

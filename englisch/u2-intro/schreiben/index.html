@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Write the word</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .de { display: block; font-family: var(--kopf); font-weight: 600; font-size: 1.25em; color: var(--hue); margin-bottom: 6px; }
+  .de small { display: block; font-family: var(--grund); font-weight: 400; font-size: .68em; color: var(--muted); }
+  .satz { display: block; line-height: 1.7; }
+  .luecke { font-family: var(--kopf); color: var(--hue); letter-spacing: -1px; white-space: nowrap; }
+  .eingabe input.textfeld { flex: 1 1 100%; }
+  .eingabe input.textfeld::placeholder { color: #9A8F80; letter-spacing: 1px; }
+  .eingabe .knopf { flex: 1 1 auto; }
+  .weg b { color: var(--hue); }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* de = Bedeutung wie im Buch, l = erwartete Form (erste = Anzeige), s = Satz mit ___ */
+  const AUFG = [
+    { de: "Slum, Elendsviertel", l: ["slum"], s: "Nobody wants to live in a ___, but some people have no money for a better home." },
+    { de: "Inder, Inderin, indisch", l: ["Indian"], s: "Ravi was born in India, so he is ___." },
+    { de: "anführen, führen, leiten", l: ["led"], s: "Last year Mia ___ our team to the final." },
+    { de: "Protest, Demonstration", l: ["protest"], s: "Hundreds of people went to the ___ against the new airport." },
+    { de: "die Briten", l: ["British"], s: "Tea with milk is very popular with the ___." },
+    { de: "unabhängig", l: ["independent"], s: "My big sister has a job and her own flat. She is ___ now." },
+    { de: "Umwelt-", l: ["environmental"], s: "Too much plastic in the sea is a big ___ problem." },
+    { de: "Verschmutzung", l: ["pollution"], s: "Cars and factories cause a lot of air ___." },
+    { de: "Abfall", l: ["waste"], s: "We try to make less ___, so we don’t buy food in plastic bags." },
+    { de: "arrangierte Hochzeit", l: ["arranged marriage"], s: "My grandparents had an ___. Their parents chose the partner for them." },
+    { de: "Hochzeit", l: ["wedding"], s: "My aunt is getting married on Saturday, and I’m going to her ___." },
+    { de: "mehrere, einige, verschiedene", l: ["several"], s: "Liam has ___ pets: two cats, a dog and a rabbit." }
+  ];
+  /* Hinweis: Anfangsbuchstabe, dann ein Strich je Buchstabe; Wörter mit drei Leerzeichen getrennt */
+  const muster = w => w.split(" ").map(t => t[0] + " _".repeat(t.length - 1)).join("   ");
+  const LUECKE = `<span class="luecke" aria-label="gap">____________</span>`;
+  let reihe = [], gestartet = false;
+
+  U.runde({
+    titel: "Write the word",
+    anzahl: 10,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0) { if (gestartet || !reihe.length) reihe = U.mische(AUFG).slice(0, 10); gestartet = true; }
+      const a = reihe[i], loes = a.l[0], zwei = loes.includes(" ");
+      return {
+        key: loes, typ: "text",
+        frage: `<span class="anw">Write the English word.</span><span class="de" lang="de">${a.de}${zwei ? `<small lang="en">two words</small>` : ""}</span>` +
+          `<span class="satz">${U.esc(a.s).replace("___", LUECKE)}</span>`,
+        hinweis: muster(loes), loesung: a.l.concat(loes === "British" ? ["the British"] : []),
+        weg: U.esc(a.s).replace("___", `<b>${loes}</b>`),
+        kurz: `<span lang="de">${a.de}</span>: ${U.esc(a.s).replace("___", "____________")}`
+      };
+    }
+  });
+})();
+</script>
+</body>
+</html>

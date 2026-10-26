@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Find the pairs</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .anw { font-size: .9em; color: var(--muted); margin: -6px 0 10px; }
+  .stand { display: flex; gap: 16px; font-family: var(--kopf); font-weight: 600; font-size: .85em; color: var(--muted); white-space: nowrap; }
+  .stand b { color: var(--hue); font-size: 1.2em; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .feld { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
+  .k { position: relative; aspect-ratio: 4 / 5; border: 0; padding: 0; background: none; cursor: pointer;
+    perspective: 600px; touch-action: manipulation; font: inherit; color: inherit; }
+  .k .innen { position: absolute; inset: 0; transition: transform .32s ease; transform-style: preserve-3d; }
+  .k.offen .innen, .k.paar .innen { transform: rotateY(180deg); }
+  .k .seite-a, .k .seite-b { position: absolute; inset: 0; border-radius: 10px; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; align-items: center; justify-content: center; }
+  .k .seite-a { background: var(--hue) repeating-linear-gradient(135deg, rgba(255,255,255,.08) 0 6px, transparent 6px 14px);
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.18); }
+  .k .seite-b { transform: rotateY(180deg); background: var(--card); border: 2px solid var(--line); padding: 14px 3px 4px;
+    text-align: center; font-size: 13.5px; line-height: 1.2; font-weight: 600; hyphens: manual; overflow-wrap: normal; word-break: normal; }
+  .k.de .seite-b { background: var(--merke); }
+  .k .seite-b::before { content: attr(data-sp); position: absolute; top: 3px; left: 6px; font: 600 10px var(--kopf); color: var(--muted); letter-spacing: .5px; }
+  .k.paar .seite-b { border-color: var(--ok); background: var(--okbg); color: var(--ok); }
+  .k.paar { cursor: default; }
+  .k.nein .seite-b { border-color: var(--bad); }
+  .unten2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .ende .paare { text-align: left; margin: 14px 0; padding: 0; list-style: none; }
+  .ende .paare li { padding: 7px 0; border-bottom: 1px solid var(--line); display: flex; gap: 8px; justify-content: space-between; }
+  .ende .paare li span:last-child { color: var(--muted); text-align: right; }
+  .ende .neu { color: var(--ok); font-weight: 600; }
+  @media (prefers-reduced-motion: reduce) { .k .innen { transition: none; } }
+  @media (max-width: 380px) { .feld { gap: 6px; } .k .seite-b { font-size: 12.5px; } }
+</style>
+</head>
+<body>
+<main class="seite" id="app">
+  <div class="leiste"><h1>Find the pairs</h1><div class="stand"><span>Moves<b id="zuege">0</b></span><span>Time<b id="zeit">0:00</b></span></div></div>
+  <p class="anw">Find the English word and its German meaning.</p>
+  <div class="feld" id="feld" aria-label="Cards"></div>
+  <div class="unten2" id="leiste2"><span class="klein" id="rekord"></span><button class="knopf zwei" type="button" id="neu">New round</button></div>
+  <div id="ende"></div>
+</main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* &shy; = mögliche Trennstelle auf schmalen Karten */
+  const WOERTER = [
+    ["slum", "Slum, Elends&shy;viertel"], ["Indian", "Inder, Inderin, indisch"], ["to lead, led, led", "an&shy;führen, führen, leiten"],
+    ["protest", "Protest, Demon&shy;stration"], ["the British", "die Briten"], ["inde&shy;pendent", "un&shy;abhängig"],
+    ["environ&shy;mental", "Umwelt-"], ["pol&shy;lution", "Ver&shy;schmutzung"], ["waste", "Abfall"],
+    ["arranged marriage", "arran&shy;gierte Hochzeit"], ["wedding", "Hochzeit"], ["several", "mehrere, einige, ver&shy;schie&shy;dene"]
+  ];
+  const PAARE = 8, REKORD = "en-u2-paare";
+  const $ = id => document.getElementById(id);
+  let S = null, uhr = 0;
+
+  const mmss = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  const sek = () => S.start ? Math.round(((S.stop || Date.now()) - S.start) / 1000) : 0;
+  function rekordText() {
+    const r = U.rekord(REKORD);
+    $("rekord").textContent = r.wert > 0 ? `Best: ${100 - r.wert} moves` : "";
+  }
+
+  function neu() {
+    clearInterval(uhr); uhr = 0;
+    const wahl = U.mische(WOERTER).slice(0, PAARE);
+    const karten = U.mische(wahl.flatMap((w, i) => [{ id: i, sp: "EN", t: w[0] }, { id: i, sp: "DE", t: w[1] }]));
+    S = { wahl, karten, offen: [], gefunden: 0, zuege: 0, start: 0, stop: 0, warte: 0 };
+    $("feld").innerHTML = karten.map((k, n) =>
+      `<button class="k${k.sp === "DE" ? " de" : ""}" type="button" data-n="${n}" aria-label="Card ${n + 1}"><span class="innen">` +
+      `<span class="seite-a"></span><span class="seite-b" data-sp="${k.sp}"${k.sp === "DE" ? ' lang="de"' : ""}${k.t.replace(/&shy;|\u00ad|<[^>]+>/g, "").split(/[ ,]/).some(w => w.length > 11) ? ' style="font-size:11px"' : ""}>${k.t}</span></span></button>`).join("");
+    $("feld").querySelectorAll(".k").forEach(b => b.addEventListener("click", () => tippe(Number(b.dataset.n))));
+    $("ende").innerHTML = ""; $("feld").classList.remove("versteckt"); $("leiste2").classList.remove("versteckt");
+    $("zuege").textContent = "0"; $("zeit").textContent = "0:00";
+    rekordText();
+  }
+  const knopf = n => $("feld").querySelector(`[data-n="${n}"]`);
+
+  function zuklappen() {
+    clearTimeout(S.warte); S.warte = 0;
+    S.offen.forEach(n => { const b = knopf(n); b.classList.remove("offen", "nein"); b.setAttribute("aria-label", `Card ${n + 1}`); });
+    S.offen = [];
+  }
+
+  function tippe(n) {
+    const b = knopf(n);
+    if (b.classList.contains("paar")) return;
+    if (S.offen.length === 2) zuklappen();          // zwei falsche Karten offen: sofort zu, dann weiter
+    if (S.offen.includes(n)) return;
+    if (!S.start) { S.start = Date.now(); uhr = setInterval(() => { $("zeit").textContent = mmss(sek()); }, 500); }
+    b.classList.add("offen"); b.setAttribute("aria-label", b.querySelector(".seite-b").textContent);
+    S.offen.push(n);
+    if (S.offen.length < 2) return;
+    S.zuege++; $("zuege").textContent = S.zuege;
+    const [x, y] = S.offen.map(i => S.karten[i]);
+    if (x.id === y.id) {
+      S.offen.forEach(i => { const k = knopf(i); k.classList.remove("offen"); k.classList.add("paar"); });
+      S.offen = []; S.gefunden++;
+      if (S.gefunden === PAARE) setTimeout(fertig, 450);
+    } else {
+      S.offen.forEach(i => knopf(i).classList.add("nein"));
+      S.warte = setTimeout(zuklappen, 1100);
+    }
+  }
+
+  function fertig() {
+    S.stop = Date.now(); clearInterval(uhr); uhr = 0;
+    $("zeit").textContent = mmss(sek());
+    const r = U.rekord(REKORD, Math.max(1, 100 - S.zuege));
+    const ohne = s => s.replace(/&shy;/g, "");
+    $("feld").classList.add("versteckt"); $("leiste2").classList.add("versteckt");
+    $("ende").innerHTML = `<div class="karte ende"><div class="kopf">${U.TEXTE.en.fertig}</div>` +
+      `<div class="gross">${S.zuege} moves</div><p>${PAARE} pairs · ${mmss(sek())}</p>` +
+      (r.neu ? `<p class="neu">New best.</p>` : r.wert > 0 ? `<p class="klein">Best: ${100 - r.wert} moves</p>` : "") +
+      `<ul class="paare">${S.wahl.map(w => `<li><span>${ohne(w[0])}</span><span lang="de">${ohne(w[1])}</span></li>`).join("")}</ul>` +
+      `<button class="knopf breit" type="button" id="nochmal">${U.TEXTE.en.neu}</button></div>`;
+    $("nochmal").onclick = () => { neu(); window.scrollTo(0, 0); };
+    rekordText();
+    window.scrollTo(0, 0);
+  }
+
+  $("neu").onclick = neu;
+  neu();
+})();
+</script>
+</body>
+</html>

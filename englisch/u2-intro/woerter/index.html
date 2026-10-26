@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Words: Unit 2 Intro</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .wort { display: block; font-family: var(--kopf); font-weight: 600; font-size: 1.5em; color: var(--hue); margin: 4px 0 2px; }
+  .weg i { color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Neue Wörter (wie im Buch) mit Ablenkern aus schon gelernten Wörtern (Zoom in, U1): gleiche Wortart, keine Synonyme */
+  const W = [
+    { en: "slum", de: "Slum, Elendsviertel", satz: "Millions of poor people live in slums.",
+      ab: [["pharmacy", "Apotheke"], ["department", "Abteilung"], ["reef", "Riff"], ["the outback", "das Outback"]] },
+    { en: "Indian", de: "Inder, Inderin, indisch", satz: "Most Indians speak English.",
+      ab: [["Australian", "Australier, Australierin, australisch"], ["settler", "Siedler, Siedlerin"], ["patient", "Patient, Patientin"], ["speaker", "Sprecher, Sprecherin"]] },
+    { en: "to lead, led, led", de: "anführen, führen, leiten", satz: "A president leads a country.",
+      ab: [["to break, broke, broken", "brechen, zerbrechen"], ["to hurt, hurt, hurt", "verletzen, wehtun"], ["to begin, began, begun", "beginnen, anfangen"]] },
+    { en: "protest", de: "Protest, Demonstration", satz: "There were protests against the British.",
+      ab: [["competition", "Wettbewerb"], ["destruction", "Zerstörung"], ["task", "Aufgabe, Auftrag"], ["danger", "Gefahr"]] },
+    { en: "the British", de: "die Briten", satz: "There were protests against the British.",
+      ab: [["the Australians", "die Australier"], ["the settlers", "die Siedler"], ["the majority", "die Mehrheit"], ["Aboriginal people", "die Aborigines"]] },
+    { en: "independent", de: "unabhängig", satz: "India is an independent country now.",
+      ab: [["confident", "selbstbewusst"], ["surprised", "überrascht"], ["colourful", "bunt"], ["disappointed", "enttäuscht"]] },
+    { en: "environmental", de: "Umwelt-", satz: "environmental → environment",
+      ab: [["Aboriginal", "Aborigine-"], ["giant", "Riesen-"], ["international", "international"]] },
+    { en: "pollution", de: "Verschmutzung", satz: "There are problems with pollution.",
+      ab: [["danger", "Gefahr"], ["temperature", "Temperatur"], ["energy", "Energie"], ["bleaching", "Ausbleichen"]] },
+    { en: "waste", de: "Abfall", satz: "waste = rubbish",
+      ab: [["rock", "Fels, Stein"], ["list", "Liste"], ["medicine", "Medizin"], ["coral", "Koralle"]] },
+    { en: "arranged marriage", de: "arrangierte Hochzeit", satz: "There are many arranged marriages in India.",
+      ab: [["medical record", "Krankenakte"], ["official language", "Amtssprache"], ["oil spill", "Ölteppich"], ["climate change", "Klimawandel"]] },
+    { en: "wedding", de: "Hochzeit", satz: "There was a big party after the wedding.",
+      ab: [["appointment", "Termin"], ["competition", "Wettbewerb"], ["painting", "Gemälde"]] },
+    { en: "several", de: "mehrere, einige, verschiedene", satz: "several = three or more, but not many",
+      ab: [["half", "Hälfte"], ["billion", "Milliarde"], ["as much as", "bis zu"]] }
+  ];
+  let reihe = [], richtung = [], gestartet = false;
+  function neueRunde() {
+    reihe = U.mische(W);
+    /* sechs Aufgaben je Richtung, gemischt */
+    richtung = U.mische([0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1]);
+  }
+  neueRunde();
+
+  U.runde({
+    titel: "Words: Unit 2 Intro",
+    anzahl: 12,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0 && gestartet) neueRunde();
+      gestartet = true;
+      const w = reihe[i], enDe = richtung[i] === 0;
+      const ab = U.mische(w.ab).slice(0, 3);
+      const opt = U.mische([[w.en, w.de]].concat(ab));
+      const k = opt.findIndex(o => o[0] === w.en);
+      const weg = `<b>${w.en}</b> – ${w.de}<br><i>${w.satz}</i>`;
+      if (enDe) return { key: "e" + w.en, typ: "wahl", frage: `Choose the German word.<span class="wort">${w.en}</span>`,
+        optionen: opt.map(o => o[1]), richtig: k, weg, kurz: w.en };
+      return { key: "d" + w.en, typ: "wahl", frage: `Choose the English word.<span class="wort" lang="de">${w.de}</span>`,
+        optionen: opt.map(o => o[0]), richtig: k, weg, kurz: `<span lang="de">${w.de}</span>` };
+    }
+  });
+})();
+</script>
+</body>
+</html>
