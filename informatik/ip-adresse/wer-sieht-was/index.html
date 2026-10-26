@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Welche Adresse?</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .nz text { font-family: var(--kopf); font-weight: 600; }
+  .nz .box { fill: var(--card); stroke: var(--hue); stroke-width: 2; }
+  .nz .box.mark { fill: var(--merke); stroke: var(--akzent); stroke-width: 3.5; }
+  .nz .box.neu { fill: var(--bg); stroke-dasharray: 6 4; }
+  .nz .router { fill: var(--tint); stroke: var(--hue); stroke-width: 2.5; }
+  .nz .wolke { fill: var(--beispiel); stroke: var(--beispiel-t); stroke-width: 2; }
+  .nz .rahmen { fill: none; stroke: #C9B8A3; stroke-width: 2; stroke-dasharray: 7 5; }
+  .nz .kabel { stroke: var(--muted); stroke-width: 2; }
+  .nz .nm { fill: var(--muted); font-size: 13px; }
+  .nz .ad { fill: var(--ink); font-size: 16px; }
+  .nz .rt { fill: var(--hue); font-size: 15px; }
+  .nz .wt { fill: var(--beispiel-t); font-size: 14px; }
+  .paar { font-family: var(--kopf); font-weight: 600; background: var(--bg); border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; }
+  .paar div { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .paar span { color: var(--muted); font-weight: 400; font-family: var(--grund); }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /*IP*/
+  /* IPv4 wie im Unterricht: genau vier Zahlen von 0 bis 255, durch Punkte getrennt.
+     Privat: 192.168.x.x, 10.x.x.x, 172.16.x.x bis 172.31.x.x; jede andere gültige Adresse ist hier öffentlich.
+     Die Zuordnung wird immer gerechnet, nie von Hand gesetzt. */
+  const IP = {};
+  const g = U.ganz;
+  IP.ZW = ["keine", "eine", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht"];
+  IP.pruefe = s => {
+    const t = String(s).split(".");
+    if (t.length < 4) return { ok: false, grund: `nur ${IP.ZW[t.length]} Zahlen` };
+    if (t.length > 4) return { ok: false, grund: `${IP.ZW[t.length]} Zahlen statt vier` };
+    for (const x of t) {
+      if (x === "") return { ok: false, grund: "ein Teil ist leer (zwei Punkte hintereinander)" };
+      const b = x.match(/[a-zA-ZäöüÄÖÜß]/);
+      if (b) return { ok: false, grund: `Buchstabe „${b[0]}“ statt Zahl` };
+      if (!/^\d+$/.test(x)) return { ok: false, grund: `„${x}“ ist keine Zahl` };
+      if (Number(x) > 255) return { ok: false, grund: `${x} ist größer als 255` };
+    }
+    const rand = t.some(x => x === "0" || x === "255");
+    return { ok: true, grund: "vier Zahlen, alle von 0 bis 255" + (rand ? " (0 und 255 sind erlaubt)" : "") };
+  };
+  /* nur für gültige Adressen: privat oder öffentlich, mit Erkennungszeichen */
+  IP.art = s => {
+    const [a, b] = String(s).split(".").map(Number);
+    if (a === 10) return { privat: true, zeichen: "fängt mit 10 an" };
+    if (a === 192 && b === 168) return { privat: true, zeichen: "fängt mit 192.168 an" };
+    if (a === 172 && b >= 16 && b <= 31) return { privat: true, zeichen: `172.${b} liegt zwischen 172.16 und 172.31` };
+    if (a === 172) return { privat: false, zeichen: `172.${b} liegt nicht zwischen 172.16 und 172.31` };
+    if (a === 192) return { privat: false, zeichen: `fängt mit 192.${b} an, nicht mit 192.168` };
+    if (a >= 100 && a <= 109) return { privat: false, zeichen: `fängt mit ${a} an, nicht mit 10` };
+    return { privat: false, zeichen: "nicht 192.168, nicht 10, nicht 172.16 bis 172.31" };
+  };
+  IP.typ = s => !IP.pruefe(s).ok ? "ungueltig" : IP.art(s).privat ? "privat" : "oeffentlich";
+  /* schon auf Folie/AB oder aus dem Huber-Beispiel: in den Pools nicht verwenden */
+  IP.SCHON = new Set(("192.168.0.1 256.10.4.7 10.0.0 172.16.254.1 192.168.1.300 8.8.8.8 192.168.178.20 10.0.0.5 172.20.4.1 " +
+    "172.40.4.1 192.168.5.44 300.12.1.1 172.16.0.256 8.8.4.4 192.168.1.1.5 10.0.0.7 172.40.5.20 172.16.5.20 192.168.178.1 " +
+    "91.12.44.7 192.168.2.1 192.168.2.10 192.168.2.11 192.168.2.12 192.168.2.13 84.153.27.9 142.250.185.78").split(" "));
+  IP.frei = s => !IP.SCHON.has(s) && !/^192\.168\.178\./.test(s);
+  /* erste Zahl für klar öffentliche Adressen (ausgedacht; keine 0, 10, 127, 172, 192, keine 224 und mehr) */
+  IP.ERSTE = [5, 31, 37, 46, 62, 77, 78, 79, 80, 81, 82, 84, 85, 87, 88, 89, 93, 94, 95, 141, 145, 151, 176, 178, 185, 188,
+    193, 194, 195, 212, 213, 217];
+  IP.MACH = {
+    p192: () => [192, 168, U.wahl([g(0, 20), g(0, 254)]), g(2, 254)],
+    p10: () => [10, g(0, 255), g(0, 255), g(2, 254)],
+    p172: () => [172, U.wahl([16, 31, g(16, 31), g(16, 31)]), g(0, 255), g(2, 254)],
+    o: () => [U.wahl(IP.ERSTE), g(1, 254), g(0, 255), g(2, 254)],
+    o172: () => [172, U.wahl([15, 32, 40, 41, g(32, 99), g(1, 14), g(100, 240)]), g(0, 255), g(2, 254)],
+    o192: () => [192, U.wahl([167, 169, 186, 68]), g(0, 255), g(2, 254)],
+    o10: () => [U.wahl([101, 102, 104, 105, 106, 107, 108, 109]), g(1, 254), g(0, 255), g(2, 254)]
+  };
+  IP.BUCHST = ["1a", "x", "4b", "e", "2c", "7f", "ab", "k3", "d"];
+  /* art: Schlüssel aus IP.MACH (gültig) oder gross, g256, drei, fuenf, buchstabe, leer (ungültig) */
+  IP.neu = art => {
+    for (let n = 0; n < 200; n++) {
+      let t;
+      if (IP.MACH[art]) t = IP.MACH[art]();
+      else {
+        t = IP.MACH[U.wahl(["p192", "p192", "p10", "o", "p172"])]();
+        const i = g(0, 3);
+        if (art === "gross") t[i] = U.wahl([g(256, 299), g(300, 999), g(300, 400)]);
+        if (art === "g256") t[i] = 256;
+        if (art === "drei") t.splice(g(1, 3), 1);
+        if (art === "fuenf") t.splice(g(1, 4), 0, g(0, 255));
+        if (art === "buchstabe") t[g(1, 3)] = U.wahl(IP.BUCHST);
+        if (art === "leer") t[g(1, 2)] = "";
+      }
+      const s = t.join(".");
+      if (IP.frei(s)) return s;
+    }
+    throw new Error("kein freies " + art);
+  };
+  /*ENDIP*/
+
+  /* ---------- Familien und Server (ausgedacht; Familie Huber wie im Unterricht) ---------- */
+  const GER = {
+    Laptop: ["der", "dem"], Handy: ["das", "dem"], Fernseher: ["der", "dem"], Konsole: ["die", "der"], Tablet: ["das", "dem"],
+    PC: ["der", "dem"], Drucker: ["der", "dem"], Lautsprecher: ["der", "dem"]
+  };
+  const NAMEN = ["Yilmaz", "Berger", "Kraus", "Novak", "Lang", "Demir", "Fischer", "Wolf", "Brandl", "Seidl"];
+  const SERVER = [{ name: "YouTube-Server", ip: "142.250.185.78" }, { name: "Spiele-Server", ip: "185.97.12.140" },
+    { name: "Wetter-Server", ip: "77.234.18.66" }];
+  const HUBER = () => ({ name: "Huber", netz: "192.168.2", innen: "192.168.2.1", aussen: "84.153.27.9",
+    geraete: [["Laptop", 10], ["Handy", 11], ["Fernseher", 12], ["Konsole", 13]].map(([n, h]) => ({ name: n, ip: "192.168.2." + h })) });
+
+  function familie(huber, ohne) {
+    if (huber) { const f = HUBER(); if (ohne) f.geraete = f.geraete.filter(d => d.name !== ohne); return f; }
+    for (;;) {
+      const netz = U.wahl([`192.168.${g(1, 60)}`, `192.168.${g(1, 60)}`, `192.168.${g(1, 60)}`, `10.0.${g(1, 40)}`]);
+      if (netz === "192.168.2") continue;
+      const namen = U.mische(Object.keys(GER).filter(n => n !== ohne)).slice(0, g(3, 4));
+      const hosts = U.mische(Array.from({ length: 98 }, (_, i) => i + 2)).slice(0, namen.length);
+      const f = { name: U.wahl(NAMEN), netz, innen: netz + ".1", aussen: IP.neu("o"),
+        geraete: namen.map((n, i) => ({ name: n, ip: `${netz}.${hosts[i]}` })) };
+      if ([f.innen].concat(f.geraete.map(d => d.ip)).every(IP.frei)) return f;
+    }
+  }
+  /* Familie Huber schaut wie im Unterricht YouTube */
+  const server = f => f.name === "Huber" ? SERVER[0] : U.wahl(SERVER);
+  const anfang = s => s.split(".").slice(0, 3).join(".");
+  const dat = d => `${GER[d.name][1]} ${d.name}`;
+  const nom = d => `${GER[d.name][0]} ${d.name}`;
+  const Gross = s => s[0].toUpperCase() + s.slice(1);
+
+  /* ---------- Skizze: Server – Internet – Router – Geräte ---------- */
+  function skizze(f, o) {
+    o = o || {};
+    const W = 340, mark = o.mark || [];
+    let s = "", y = 4;
+    const t = (x, yy, cls, txt) => `<text x="${x}" y="${yy}" class="${cls}" text-anchor="middle" dominant-baseline="central">${U.esc(txt)}</text>`;
+    if (o.server) {
+      s += `<rect class="box" x="85" y="${y}" width="170" height="48" rx="10"/>` + t(170, y + 15, "nm", o.server.name) + t(170, y + 33, "ad", o.server.ip);
+      s += `<line class="kabel" x1="170" y1="${y + 48}" x2="170" y2="${y + 64}"/>`;
+      s += `<ellipse class="wolke" cx="170" cy="${y + 79}" rx="58" ry="15"/>` + t(170, y + 79, "wt", "Internet");
+      s += `<line class="kabel" x1="170" y1="${y + 94}" x2="170" y2="${y + 110}"/>`;
+      y += 110;
+    }
+    const rTop = y, rH = 66;
+    const ad = [f.aussen, f.innen];
+    if (o.tausch) ad.reverse();
+    const zeilen = o.ohneBeschriftung ? ad : ["außen " + f.aussen, "innen " + f.innen];
+    const geraete = f.geraete.concat(o.neu ? [{ name: o.neu, ip: "?", neu: true }] : []);
+    const reihen = Math.ceil(geraete.length / 2), yD = rTop + rH + 18;
+    const unten = yD + reihen * 56 - 10, H = unten + 36;
+    s += `<rect class="rahmen" x="4" y="${rTop + rH / 2}" width="332" height="${H - 4 - rTop - rH / 2}" rx="14"/>`;
+    s += t(170, unten + 18, "nm", "Heimnetz Familie " + f.name);
+    const letzteMitte = yD + (reihen - 1) * 56 + 23;
+    s += `<line class="kabel" x1="170" y1="${rTop + rH}" x2="170" y2="${letzteMitte}"/>`;
+    s += `<rect class="router" x="62" y="${rTop}" width="216" height="${rH}" rx="12"/>` +
+      t(170, rTop + 15, "ad", zeilen[0]) + t(170, rTop + 33, "rt", "Router") + t(170, rTop + 51, "ad", zeilen[1]);
+    geraete.forEach((d, i) => {
+      const r = Math.floor(i / 2), links = i % 2 === 0, x = links ? 12 : 178, yy = yD + r * 56;
+      const cls = "box" + (mark.includes(d.ip) ? " mark" : "") + (d.neu ? " neu" : "");
+      s += `<line class="kabel" x1="${links ? 162 : 178}" y1="${yy + 23}" x2="170" y2="${yy + 23}"/>`;
+      s += `<rect class="${cls}" x="${x}" y="${yy}" width="150" height="46" rx="10"/>` + t(x + 75, yy + 14, "nm", d.name) + t(x + 75, yy + 32, "ad", d.ip);
+    });
+    return `<svg class="bild nz" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Netz-Skizze">${s}</svg>`;
+  }
+
+  /* ---------- Aufgabentypen ---------- */
+  const TYPEN = {
+    sieht(huber) {
+      const f = familie(huber), d = U.wahl(f.geraete), sv = server(f);
+      const opt = U.mische([f.aussen, d.ip, f.innen, sv.ip]);
+      return { typ: "wahl", frage: `${Gross(nom(d))} von Familie ${f.name} ruft etwas beim ${sv.name} ab. Welche Adresse sieht der Server?`,
+        bild: skizze(f, { server: sv, mark: [d.ip] }), optionen: opt, richtig: opt.indexOf(f.aussen), spalten: 2,
+        weg: `Alle Geräte im Heimnetz teilen sich nach außen die öffentliche Adresse des Routers. Der Server sieht nur ${f.aussen}.`,
+        kurz: `${d.name} (${d.ip}) fragt beim ${sv.name}: Welche Adresse sieht der Server?`, meta: { f, antwort: f.aussen } };
+    },
+    beide(huber) {
+      const f = familie(huber), [d1, d2] = U.mische(f.geraete), sv = server(f);
+      const r = `bei beiden ${f.aussen}`;
+      const opt = U.mische([r, `${d1.ip} und ${d2.ip}`, `bei beiden ${f.innen}`, `bei beiden ${sv.ip}`]);
+      return { typ: "wahl", frage: `${d1.name} und ${d2.name} von Familie ${f.name} rufen gleichzeitig etwas beim ${sv.name} ab. Welche Adresse sieht der Server?`,
+        bild: skizze(f, { server: sv, mark: [d1.ip, d2.ip] }), optionen: opt, richtig: opt.indexOf(r),
+        weg: `Beide Geräte teilen sich nach außen die öffentliche Adresse des Routers: ${f.aussen}.`,
+        kurz: `${d1.name} und ${d2.name} fragen beim ${sv.name}: Welche Adresse sieht er?`, meta: { f, antwort: f.aussen } };
+    },
+    router(huber) {
+      const f = familie(huber), d = U.wahl(f.geraete), sv = server(f), innen = Math.random() < 0.5;
+      const r = innen ? f.innen : f.aussen, opt = U.mische([f.innen, f.aussen, d.ip, sv.ip]);
+      return { typ: "wahl", frage: innen ? "Welche Adresse hat der Router im Heimnetz (innen)?" : "Welche Adresse hat der Router im Internet (außen)?",
+        bild: skizze(f, { server: sv, ohneBeschriftung: true, tausch: Math.random() < 0.5 }), optionen: opt, richtig: opt.indexOf(r), spalten: 2,
+        weg: `Innen hat der Router eine private Adresse mit dem gleichen Anfang wie die Geräte: ${f.innen}. Außen hat er die öffentliche Adresse vom Internetanbieter: ${f.aussen}.`,
+        kurz: `Router von Familie ${f.name}: Adresse ${innen ? "innen" : "außen"}?`, meta: { f, antwort: r } };
+    },
+    tablet(huber) {
+      const f = familie(huber, "Tablet"), belegt = new Set(f.geraete.map(d => Number(d.ip.split(".")[3])).concat([1]));
+      let h; do { h = g(2, 99); } while (belegt.has(h) || !IP.frei(`${f.netz}.${h}`));
+      const r = `${f.netz}.${h}`, d = U.wahl(f.geraete), [a, b, c] = f.netz.split(".").map(Number);
+      const anders = `${a}.${b}.${c === 60 || c === 40 ? c - 1 : c + 1}.${h}`;
+      const falsch = U.mische([
+        [d.ip, `${d.ip} hat schon ${nom(d)}.`],
+        [anders, `${anders} hat einen anderen Anfang und liegt in einem anderen Netz.`],
+        [`${f.netz}.256`, `${f.netz}.256 ist ungültig: 256 ist größer als 255.`],
+        [f.aussen, `${f.aussen} ist die öffentliche Adresse des Routers.`]
+      ]).slice(0, 3);
+      const opt = U.mische([r].concat(falsch.map(x => x[0])));
+      return { typ: "wahl", frage: `Familie ${f.name} hat ein neues Tablet. Welche Adresse kann der Router ihm geben?`,
+        bild: skizze(f, { neu: "Tablet" }), optionen: opt, richtig: opt.indexOf(r), spalten: 2,
+        weg: `${r}: gleicher Anfang ${f.netz}., die letzte Zahl ist noch frei. ` + falsch.map(x => x[1]).join(" "),
+        kurz: `Neues Tablet bei Familie ${f.name}: welche Adresse?`, meta: { f, antwort: r, falsch: falsch.map(x => x[0]) } };
+    },
+    vergabe(huber) {
+      const f = familie(huber), d = U.wahl(f.geraete), sv = server(f), oeff = Math.random() < 0.5;
+      const r = oeff ? "der Internetanbieter" : "der Router, automatisch";
+      const opt = oeff ? U.mische([r, "der Router selbst", `der ${sv.name}`, nom(d)])
+                       : U.mische([r, "der Internetanbieter", `der ${sv.name}`, `${nom(d)} selbst`]);
+      return { typ: "wahl", frage: oeff ? `Wer gibt dem Router von Familie ${f.name} die öffentliche Adresse ${f.aussen}?`
+                                        : `Wer gibt ${dat(d)} von Familie ${f.name} die Adresse ${d.ip}?`,
+        bild: skizze(f, { server: sv, mark: oeff ? [] : [d.ip] }), optionen: opt, richtig: opt.indexOf(r),
+        weg: oeff ? "Die öffentliche Adresse bekommt der Router vom Internetanbieter."
+                  : "Im Heimnetz vergibt der Router die privaten Adressen automatisch (dynamisch).",
+        kurz: oeff ? `Wer vergibt die öffentliche Adresse ${f.aussen}?` : `Wer vergibt die Adresse ${d.ip} im Heimnetz?`, meta: { oeff } };
+    },
+    netz() {
+      const [n1, n2] = U.mische(Object.keys(GER)).slice(0, 2);
+      let p, q, gleich;
+      for (;;) {
+        gleich = Math.random() < 0.5;
+        const c = g(1, 60), h1 = g(2, 99), h2 = g(2, 99);
+        p = `192.168.${c}.${h1}`;
+        if (gleich) q = `192.168.${c}.${h2}`;
+        else q = U.wahl([`192.168.${c + U.wahl([1, 2, 10])}.${U.wahl([h1, h2])}`, `10.0.${c}.${h1}`]);
+        if (p !== q && h1 !== h2 && IP.frei(p) && IP.frei(q) && c !== 2) break;
+      }
+      if (Math.random() < 0.3) { p = "10.0." + p.split(".").slice(2).join("."); if (gleich) q = "10.0." + q.split(".").slice(2).join("."); }
+      if (!IP.frei(p) || !IP.frei(q) || p === q) return TYPEN.netz();
+      const ja = anfang(p) === anfang(q);
+      return { typ: "wahl", frage: "Sind die zwei Geräte im gleichen Netz?",
+        bild: `<div class="paar"><div><span>${n1}</span>${p}</div><div><span>${n2}</span>${q}</div></div>`,
+        optionen: ["ja, gleiches Netz", "nein"], richtig: ja ? 0 : 1, spalten: 2,
+        weg: ja ? `Gleicher Anfang ${anfang(p)}, nur die letzte Zahl ist anders → gleiches Netz.`
+                : `Der Anfang ${anfang(p)} und ${anfang(q)} ist verschieden → nicht im gleichen Netz.`,
+        kurz: `${p} und ${q}: gleiches Netz?`, meta: { p, q, ja } };
+    },
+    doppelt(huber) {
+      const f = familie(huber, "Tablet"), d = U.wahl(f.geraete);
+      const r = "Die Daten wissen nicht, zu welchem Gerät sie sollen.";
+      const opt = U.mische([r, "Die Adresse ist ungültig.", "Das Tablet braucht eine öffentliche Adresse.", "Es gibt kein Problem."]);
+      return { typ: "wahl", frage: `Der Router von Familie ${f.name} gibt dem neuen Tablet dieselbe Adresse wie ${dat(d)}: ${d.ip}. Was ist das Problem?`,
+        optionen: opt, richtig: opt.indexOf(r),
+        weg: "Wie beim Postboten: Haben zwei Häuser dieselbe Adresse, weiß er nicht, wohin der Brief soll. Jedes Gerät im Netz braucht eine eigene Adresse.",
+        kurz: `Tablet und ${d.name} mit derselben Adresse ${d.ip}: Problem?` };
+    },
+    zweiFamilien() {
+      const f = familie(false), d = U.wahl(f.geraete), andere = U.wahl(NAMEN.filter(n => n !== f.name));
+      const r = "Ja. Private Adressen gelten nur im eigenen Netz.";
+      const opt = U.mische([r, "Nein. Jede Adresse gibt es nur einmal auf der Welt.", "Nein. Eine Familie muss eine öffentliche Adresse nehmen."]);
+      return { typ: "wahl", frage: `${Gross(nom(d))} von Familie ${f.name} hat die Adresse ${d.ip}. Bei Familie ${andere} hat ein Gerät dieselbe Adresse. Geht das?`,
+        optionen: opt, richtig: opt.indexOf(r),
+        weg: `Private Adressen gelten nur im eigenen Netz; ${d.ip} kann es in vielen Heimnetzen geben. Nach außen hat jede Familie ihre eigene öffentliche Adresse.`,
+        kurz: `${d.ip} bei zwei Familien: Geht das?` };
+    }
+  };
+
+  let plan = [], letzteI = -1;
+  const cfg = {
+    titel: "Welche Adresse?",
+    anzahl: 8,
+    erzeuge(i) {
+      if (i === 0 && letzteI !== 0) plan = ["sieht"].concat(U.mische(Object.keys(TYPEN).filter(k => k !== "sieht")));
+      letzteI = i;
+      const art = plan[i], a = TYPEN[art](i === 0 || Math.random() < 0.3);
+      a.key = art; a.art = art;
+      return a;
+    }
+  };
+  window.__test = { IP, TYPEN, familie, skizze, SERVER, cfg };
+  U.runde(cfg);
+})();
+</script>
+</body>
+</html>

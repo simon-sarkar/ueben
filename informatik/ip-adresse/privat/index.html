@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Privat oder öffentlich?</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  html, body { overflow-x: hidden; }
+  .seite { overflow-x: hidden; overflow-x: clip; }
+  .anw { margin: 0 0 14px; }
+  .stapel { position: relative; margin: 0 0 30px; isolation: isolate; }
+  .stapel .hinten { position: absolute; left: 10px; right: 10px; top: 10px; bottom: -10px; background: var(--tint);
+    border-radius: 14px; z-index: 0; }
+  .stapel .hinten.zwei { left: 20px; right: 20px; top: 20px; bottom: -20px; background: var(--line); z-index: -1; }
+  .sk { position: relative; z-index: 1; margin: 0; touch-action: pan-y; user-select: none;
+    -webkit-user-select: none; cursor: grab; will-change: transform; display: flex; flex-direction: column; }
+  .sk.zieht { cursor: grabbing; }
+  .sk.fertig { cursor: default; }
+  .sk .nummer { font-family: var(--kopf); font-weight: 600; color: var(--muted); font-size: .85em; }
+  .adresse { font-family: var(--kopf); font-weight: 600; font-size: 1.75em; text-align: center; letter-spacing: .02em;
+    background: var(--bg); border-radius: 12px; padding: 12px 8px; margin: 18px 0 8px; overflow-wrap: anywhere; }
+  .frage2 { text-align: center; color: var(--muted); margin: 4px 0 0; }
+  .marke { position: absolute; top: 14px; padding: 4px 10px; border-radius: 8px; font: 600 .9em var(--kopf);
+    opacity: 0; pointer-events: none; }
+  .marke.li { left: 14px; color: var(--hinweis-t); background: var(--hinweis); box-shadow: inset 0 0 0 2px var(--hinweis-t); }
+  .marke.re { right: 14px; color: var(--beispiel-t); background: var(--beispiel); box-shadow: inset 0 0 0 2px var(--beispiel-t); }
+  .knoepfe { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .knoepfe .knopf { min-height: 56px; padding: 10px 8px; line-height: 1.2; flex-direction: column; gap: 2px; }
+  .knoepfe .knopf small { font: 400 .78em var(--grund); opacity: .85; }
+  .knopf.priv { background: var(--hinweis); color: var(--hinweis-t); box-shadow: inset 0 0 0 2px var(--hinweis-t); }
+  .knopf.oeff { background: var(--beispiel); color: var(--beispiel-t); box-shadow: inset 0 0 0 2px var(--beispiel-t); }
+  .sk .rueck { margin-top: 10px; }
+  .grund { font-weight: 400; color: var(--ink); margin-top: 4px; }
+  .knopf:focus:not(:focus-visible) { outline: none; }
+  .liste .ip { font-family: var(--kopf); font-weight: 600; }
+  @media (max-width: 380px) { .adresse { font-size: 1.55em; } }
+  @media (prefers-reduced-motion: reduce) { .sk { transition: none !important; } }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /*IP*/
+  /* IPv4 wie im Unterricht: genau vier Zahlen von 0 bis 255, durch Punkte getrennt.
+     Privat: 192.168.x.x, 10.x.x.x, 172.16.x.x bis 172.31.x.x; jede andere gültige Adresse ist hier öffentlich.
+     Die Zuordnung wird immer gerechnet, nie von Hand gesetzt. */
+  const IP = {};
+  const g = U.ganz;
+  IP.ZW = ["keine", "eine", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht"];
+  IP.pruefe = s => {
+    const t = String(s).split(".");
+    if (t.length < 4) return { ok: false, grund: `nur ${IP.ZW[t.length]} Zahlen` };
+    if (t.length > 4) return { ok: false, grund: `${IP.ZW[t.length]} Zahlen statt vier` };
+    for (const x of t) {
+      if (x === "") return { ok: false, grund: "ein Teil ist leer (zwei Punkte hintereinander)" };
+      const b = x.match(/[a-zA-ZäöüÄÖÜß]/);
+      if (b) return { ok: false, grund: `Buchstabe „${b[0]}“ statt Zahl` };
+      if (!/^\d+$/.test(x)) return { ok: false, grund: `„${x}“ ist keine Zahl` };
+      if (Number(x) > 255) return { ok: false, grund: `${x} ist größer als 255` };
+    }
+    const rand = t.some(x => x === "0" || x === "255");
+    return { ok: true, grund: "vier Zahlen, alle von 0 bis 255" + (rand ? " (0 und 255 sind erlaubt)" : "") };
+  };
+  /* nur für gültige Adressen: privat oder öffentlich, mit Erkennungszeichen */
+  IP.art = s => {
+    const [a, b] = String(s).split(".").map(Number);
+    if (a === 10) return { privat: true, zeichen: "fängt mit 10 an" };
+    if (a === 192 && b === 168) return { privat: true, zeichen: "fängt mit 192.168 an" };
+    if (a === 172 && b >= 16 && b <= 31) return { privat: true, zeichen: `172.${b} liegt zwischen 172.16 und 172.31` };
+    if (a === 172) return { privat: false, zeichen: `172.${b} liegt nicht zwischen 172.16 und 172.31` };
+    if (a === 192) return { privat: false, zeichen: `fängt mit 192.${b} an, nicht mit 192.168` };
+    if (a >= 100 && a <= 109) return { privat: false, zeichen: `fängt mit ${a} an, nicht mit 10` };
+    return { privat: false, zeichen: "nicht 192.168, nicht 10, nicht 172.16 bis 172.31" };
+  };
+  IP.typ = s => !IP.pruefe(s).ok ? "ungueltig" : IP.art(s).privat ? "privat" : "oeffentlich";
+  /* schon auf Folie/AB oder aus dem Huber-Beispiel: in den Pools nicht verwenden */
+  IP.SCHON = new Set(("192.168.0.1 256.10.4.7 10.0.0 172.16.254.1 192.168.1.300 8.8.8.8 192.168.178.20 10.0.0.5 172.20.4.1 " +
+    "172.40.4.1 192.168.5.44 300.12.1.1 172.16.0.256 8.8.4.4 192.168.1.1.5 10.0.0.7 172.40.5.20 172.16.5.20 192.168.178.1 " +
+    "91.12.44.7 192.168.2.1 192.168.2.10 192.168.2.11 192.168.2.12 192.168.2.13 84.153.27.9 142.250.185.78").split(" "));
+  IP.frei = s => !IP.SCHON.has(s) && !/^192\.168\.178\./.test(s);
+  /* erste Zahl für klar öffentliche Adressen (ausgedacht; keine 0, 10, 127, 172, 192, keine 224 und mehr) */
+  IP.ERSTE = [5, 31, 37, 46, 62, 77, 78, 79, 80, 81, 82, 84, 85, 87, 88, 89, 93, 94, 95, 141, 145, 151, 176, 178, 185, 188,
+    193, 194, 195, 212, 213, 217];
+  IP.MACH = {
+    p192: () => [192, 168, U.wahl([g(0, 20), g(0, 254)]), g(2, 254)],
+    p10: () => [10, g(0, 255), g(0, 255), g(2, 254)],
+    p172: () => [172, U.wahl([16, 31, g(16, 31), g(16, 31)]), g(0, 255), g(2, 254)],
+    o: () => [U.wahl(IP.ERSTE), g(1, 254), g(0, 255), g(2, 254)],
+    o172: () => [172, U.wahl([15, 32, 40, 41, g(32, 99), g(1, 14), g(100, 240)]), g(0, 255), g(2, 254)],
+    o192: () => [192, U.wahl([167, 169, 186, 68]), g(0, 255), g(2, 254)],
+    o10: () => [U.wahl([101, 102, 104, 105, 106, 107, 108, 109]), g(1, 254), g(0, 255), g(2, 254)]
+  };
+  IP.BUCHST = ["1a", "x", "4b", "e", "2c", "7f", "ab", "k3", "d"];
+  /* art: Schlüssel aus IP.MACH (gültig) oder gross, g256, drei, fuenf, buchstabe, leer (ungültig) */
+  IP.neu = art => {
+    for (let n = 0; n < 200; n++) {
+      let t;
+      if (IP.MACH[art]) t = IP.MACH[art]();
+      else {
+        t = IP.MACH[U.wahl(["p192", "p192", "p10", "o", "p172"])]();
+        const i = g(0, 3);
+        if (art === "gross") t[i] = U.wahl([g(256, 299), g(300, 999), g(300, 400)]);
+        if (art === "g256") t[i] = 256;
+        if (art === "drei") t.splice(g(1, 3), 1);
+        if (art === "fuenf") t.splice(g(1, 4), 0, g(0, 255));
+        if (art === "buchstabe") t[g(1, 3)] = U.wahl(IP.BUCHST);
+        if (art === "leer") t[g(1, 2)] = "";
+      }
+      const s = t.join(".");
+      if (IP.frei(s)) return s;
+    }
+    throw new Error("kein freies " + art);
+  };
+  /*ENDIP*/
+
+  const ANZAHL = 12, TITEL = "Privat oder öffentlich?", app = document.getElementById("app");
+  let karten, nr, richtig, fehler;
+
+  /* 5 bis 7 private, der Rest öffentlich; knifflige 172er (Rand 16/31 und knapp daneben) sind immer dabei */
+  function stapelNeu() {
+    const nPriv = g(5, 7);
+    const priv = ["p192", "p10", "p172", "p172rand"].concat(U.mische(["p192", "p10", "p172"])).slice(0, nPriv);
+    const oeff = ["o172", "o172", "o", U.wahl(["o192", "o10"])].concat(U.mische(["o", "o172", "o"])).slice(0, ANZAHL - nPriv);
+    const schon = new Set(), liste = [];
+    for (const art of U.mische(priv.concat(oeff))) {
+      let s;
+      do {
+        if (art === "p172rand") { const t = IP.MACH.p172(); t[1] = U.wahl([16, 31]); s = t.join("."); }
+        else s = IP.neu(art);
+      } while (schon.has(s) || !IP.frei(s));
+      schon.add(s); liste.push(s);
+    }
+    return liste;
+  }
+
+  function start() { karten = stapelNeu(); nr = 0; richtig = 0; fehler = []; zeige(); window.scrollTo(0, 0); }
+
+  function kopf() {
+    return `<div class="leiste"><h1>${TITEL}</h1><span class="punkte">${richtig} / ${ANZAHL}</span></div>` +
+      `<div class="balken"><i style="width:${100 * nr / ANZAHL}%"></i></div>`;
+  }
+
+  function zeige() {
+    if (nr >= ANZAHL) return ende();
+    const s = karten[nr];
+    app.innerHTML = kopf() +
+      `<p class="anw">Wische nach links, wenn die Adresse privat ist, nach rechts, wenn sie öffentlich ist.</p>` +
+      `<div class="stapel">${nr < ANZAHL - 1 ? '<div class="hinten"></div>' : ""}${nr < ANZAHL - 2 ? '<div class="hinten zwei"></div>' : ""}` +
+      `<div class="karte sk" tabindex="0" aria-label="Karte ${nr + 1} von ${ANZAHL}">` +
+      `<span class="marke li">privat</span><span class="marke re">öffentlich</span>` +
+      `<div class="nummer">Karte ${nr + 1} von ${ANZAHL}</div>` +
+      `<div class="adresse">${s}</div>` +
+      `<p class="frage2">Privat oder öffentlich?</p><div class="ergebnis"></div></div></div>` +
+      `<div class="knoepfe"><button class="knopf priv" type="button" data-w="privat">← privat<small>bleibt im eigenen Netz</small></button>` +
+      `<button class="knopf oeff" type="button" data-w="oeffentlich">öffentlich →<small>gilt im ganzen Internet</small></button></div>` +
+      `<div class="unten versteckt"><button class="knopf breit" type="button" data-weiter>Weiter</button></div>`;
+    app.querySelectorAll("[data-w]").forEach(b => b.onclick = () => entscheide(b.dataset.w === "privat"));
+    wischen(app.querySelector(".sk"));
+  }
+
+  /* Wischen mit Finger oder Maus; senkrechtes Scrollen bleibt möglich (touch-action: pan-y) */
+  function wischen(el) {
+    const mLi = el.querySelector(".marke.li"), mRe = el.querySelector(".marke.re");
+    let id = null, x0 = 0, t0 = 0, dx = 0;
+    const setze = (x, glatt) => {
+      el.style.transition = glatt ? "transform .22s ease-out" : "none";
+      el.style.transform = x ? `translateX(${x}px) rotate(${x / 22}deg)` : "";
+      const s = Math.min(1, Math.abs(x) / 90);
+      mRe.style.opacity = x > 0 ? s : 0; mLi.style.opacity = x < 0 ? s : 0;
+    };
+    el.addEventListener("pointerdown", e => {
+      if (el.classList.contains("fertig") || id !== null || (e.pointerType === "mouse" && e.button !== 0)) return;
+      id = e.pointerId; x0 = e.clientX; t0 = performance.now(); dx = 0;
+      el.classList.add("zieht");
+      try { el.setPointerCapture(id); } catch (err) { /* egal */ }
+    });
+    el.addEventListener("pointermove", e => { if (e.pointerId === id) { dx = e.clientX - x0; setze(dx, false); } });
+    const los = e => {
+      if (e.pointerId !== id) return;
+      id = null; el.classList.remove("zieht");
+      const v = Math.abs(dx) / Math.max(1, performance.now() - t0);
+      if (e.type === "pointerup" && (Math.abs(dx) > 90 || (Math.abs(dx) > 40 && v > 0.5))) {
+        const links = dx < 0;
+        setze(links ? -140 : 140, true);
+        setTimeout(() => { setze(0, true); entscheide(links); }, 160);
+      } else setze(0, true);
+    };
+    el.addEventListener("pointerup", los);
+    el.addEventListener("pointercancel", los);
+  }
+
+  const name = p => p ? "privat" : "öffentlich";
+  const erklaerung = s => { const a = IP.art(s); return `${a.zeichen} → ${a.privat ? "privat, gilt nur im eigenen Netz" : "öffentlich, gilt im ganzen Internet"}`; };
+
+  function entscheide(privatGewaehlt) {
+    const karte = app.querySelector(".sk");
+    if (!karte || karte.classList.contains("fertig")) return;
+    karte.classList.add("fertig");
+    const s = karten[nr], a = IP.art(s), ok = privatGewaehlt === a.privat;
+    if (ok) richtig++; else fehler.push({ s, privatGewaehlt });
+    karte.querySelectorAll(".marke").forEach(m => m.style.opacity = 0);
+    karte.querySelector(".frage2").remove();
+    const e = karte.querySelector(".ergebnis");
+    e.className = "rueck " + (ok ? "ok" : "falsch");
+    e.innerHTML = (ok ? "Richtig: " : "Nicht ganz: ") + name(a.privat) + "." + `<div class="grund">${erklaerung(s)}</div>`;
+    app.querySelector(".punkte").textContent = `${richtig} / ${ANZAHL}`;
+    app.querySelector(".knoepfe").classList.add("versteckt");
+    const u = app.querySelector(".unten"); u.classList.remove("versteckt");
+    const w = u.querySelector("[data-weiter]");
+    w.textContent = nr === ANZAHL - 1 ? "Zum Ergebnis" : "Weiter";
+    w.focus({ preventScroll: true });
+    w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };
+    if (u.getBoundingClientRect().bottom > innerHeight) u.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
+
+  function ende() {
+    const q = richtig / ANZAHL, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
+    let h = `<div class="leiste"><h1>${TITEL}</h1></div><div class="karte ende"><div class="kopf">Geschafft</div>` +
+      `<div class="gross">${richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+      [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
+      fehler.map(f => `<li><span class="ip">${f.s}</span> ist <b>${name(IP.art(f.s).privat)}</b><br>` +
+        `<span class="klein">${erklaerung(f.s)}</span></li>`).join("") + "</ul>";
+    h += `<button class="knopf breit" type="button" data-neu>Neue Runde mit neuen Karten</button></div>`;
+    app.innerHTML = h;
+    app.querySelector("[data-neu]").onclick = start;
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") entscheide(true);
+    if (e.key === "ArrowRight") entscheide(false);
+  });
+
+  window.__test = { IP, stapelNeu, karten: () => karten };
+  start();
+})();
+</script>
+</body>
+</html>

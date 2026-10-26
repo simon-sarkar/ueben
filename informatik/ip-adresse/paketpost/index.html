@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Paketpost</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  #spiel { position: fixed; inset: 0; max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; }
+  .hud { display: flex; align-items: center; gap: 14px; padding: 6px 8px 6px 16px; padding-top: max(6px, env(safe-area-inset-top));
+    border-bottom: 2px solid var(--line); background: var(--bg); font-family: var(--kopf); font-weight: 600; flex: none; }
+  .hud .wert { color: var(--muted); font-size: .8em; white-space: nowrap; }
+  .hud .wert b { color: var(--hue); font-size: 1.3em; margin-left: 4px; }
+  .hud .leben { display: flex; gap: 6px; margin-left: auto; }
+  .hud .leben i { width: 14px; height: 14px; border-radius: 50%; background: var(--akzent); box-shadow: inset 0 0 0 2px var(--hue); }
+  .hud .leben i.aus { background: transparent; box-shadow: inset 0 0 0 2px var(--line); }
+  .pausek { width: 48px; height: 48px; border: 0; border-radius: 12px; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 5px; touch-action: manipulation; }
+  .pausek i { width: 5px; height: 18px; border-radius: 2px; background: var(--hue); }
+  .pausek:disabled { opacity: .3; }
+
+  .feld { position: relative; flex: 1; min-height: 0; overflow: hidden; touch-action: none; }
+  .router { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); padding: 6px 18px; border-radius: 10px;
+    background: var(--tint); box-shadow: inset 0 0 0 2px var(--hue); color: var(--hue); font: 600 .9em var(--kopf); }
+  .ziel { position: absolute; display: flex; align-items: center; justify-content: center; font: 600 .85em var(--kopf);
+    border-radius: 12px; transition: background .12s, box-shadow .12s; pointer-events: none; text-align: center; line-height: 1.2; }
+  .ziel.li, .ziel.re { top: 56px; bottom: 56px; width: 38px; writing-mode: vertical-rl; }
+  .ziel.li { left: 4px; transform: rotate(180deg); color: var(--hinweis-t); background: rgba(219, 250, 250, .45); }
+  .ziel.re { right: 4px; color: var(--beispiel-t); background: rgba(219, 235, 250, .45); }
+  .ziel.un { left: 46px; right: 46px; bottom: 6px; height: 42px; color: var(--bad); background: rgba(254, 243, 242, .7); }
+  .ziel.li.an { background: var(--hinweis); box-shadow: inset 0 0 0 2px var(--hinweis-t); }
+  .ziel.re.an { background: var(--beispiel); box-shadow: inset 0 0 0 2px var(--beispiel-t); }
+  .ziel.un.an { background: var(--badbg); box-shadow: inset 0 0 0 2px var(--bad); }
+
+  .paket { position: absolute; left: 50px; right: 50px; top: 50%; max-width: 300px; margin: 0 auto;
+    transform: translateY(-50%); background: var(--card); border-radius: 14px; box-shadow: inset 0 0 0 2.5px var(--hue), 0 4px 0 var(--line);
+    padding: 12px 12px 14px; text-align: center; cursor: grab; will-change: transform; }
+  .paket .kl { font: 600 .78em var(--kopf); color: var(--muted); letter-spacing: .04em; }
+  .paket .adr { font: 600 1.55em var(--kopf); color: var(--ink); margin: 2px 0 10px; overflow-wrap: anywhere; line-height: 1.25; }
+  .paket .uhr { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
+  .paket .uhr i { display: block; height: 100%; width: 100%; background: var(--akzent); border-radius: 99px; }
+  .paket .uhr i.knapp { background: var(--bad); }
+  .paket.falsch { box-shadow: inset 0 0 0 3px var(--bad), 0 4px 0 var(--line); background: var(--badbg); }
+  .paket.gut { box-shadow: inset 0 0 0 3px var(--ok), 0 4px 0 var(--line); background: var(--okbg); }
+  .banner { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; font-family: var(--kopf); font-weight: 600; }
+  .banner b { display: block; font-size: 2em; color: var(--hue); }
+  .banner span { color: var(--muted); }
+  .plus { position: absolute; left: 50%; top: 34%; transform: translateX(-50%); color: var(--ok); font: 600 1.3em var(--kopf);
+    pointer-events: none; animation: hoch .7s ease-out forwards; }
+  @keyframes hoch { to { transform: translate(-50%, -40px); opacity: 0; } }
+
+  .tasten { flex: none; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 8px 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom)); border-top: 2px solid var(--line); background: var(--bg); }
+  .tasten .knopf { min-height: 64px; padding: 6px 4px; flex-direction: column; gap: 0; line-height: 1.2; font-size: .95em; }
+  .tasten .knopf small { font: 400 .78em var(--grund); }
+  .knopf.priv { background: var(--hinweis); color: var(--hinweis-t); box-shadow: inset 0 0 0 2px var(--hinweis-t); }
+  .knopf.oeff { background: var(--beispiel); color: var(--beispiel-t); box-shadow: inset 0 0 0 2px var(--beispiel-t); }
+  .knopf.zur { background: var(--badbg); color: var(--bad); box-shadow: inset 0 0 0 2px var(--bad); }
+
+  .ebene { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; justify-content: center; padding: 16px;
+    background: rgba(255, 248, 236, .94); overflow-y: auto; -webkit-overflow-scrolling: touch; user-select: text;
+    -webkit-user-select: text; touch-action: pan-y; }
+  .ebene.oben { justify-content: flex-start; }
+  .ebene .karte { margin: auto 0; }
+  .ebene h1 { font-size: 1.4em; }
+  .ebene p { margin: 0 0 12px; }
+  .ebene .knopf { margin-top: 6px; }
+  .ebene .gross-ip { font: 600 1.5em var(--kopf); margin: 2px 0 8px; overflow-wrap: anywhere; }
+  .titel-bad { color: var(--bad); }
+  .ende .gross { margin: 0; }
+  .liste .ip { font-family: var(--kopf); font-weight: 600; }
+  .knopf:focus:not(:focus-visible) { outline: none; }
+  @media (max-width: 380px) { .hud { gap: 10px; } .paket .adr { font-size: 1.4em; } .tasten .knopf { font-size: .9em; } }
+</style>
+</head>
+<body>
+<div id="spiel">
+  <div class="hud">
+    <span class="wert">Punkte<b id="pkt">0</b></span>
+    <span class="wert">Stufe<b id="stufe">1</b></span>
+    <span class="leben" id="leben" aria-label="3 Leben"><i></i><i></i><i></i></span>
+    <button class="pausek" id="pause" type="button" aria-label="Pause" disabled><i></i><i></i></button>
+  </div>
+  <div class="feld" id="feld">
+    <div class="router">Router</div>
+    <div class="ziel li" data-z="privat">bleibt zu Hause</div>
+    <div class="ziel re" data-z="oeffentlich">ins Internet</div>
+    <div class="ziel un" data-z="ungueltig">ungültig – zurück</div>
+    <div id="paketplatz"></div>
+    <div class="banner versteckt" id="banner"></div>
+    <div class="ebene" id="start">
+      <div class="karte">
+        <h1>Paketpost</h1>
+        <p>Sortiere jedes Datenpaket nach seiner Zieladresse: privat bleibt zu Hause, öffentlich geht ins Internet, ungültig geht zurück.</p>
+        <p>Wische nach links, rechts oder unten oder nimm die Knöpfe; drei Fehler beenden das Spiel.</p>
+        <p class="klein" id="rekordStart"></p>
+        <button class="knopf breit" type="button" id="los">Start</button>
+      </div>
+    </div>
+    <div class="ebene versteckt" id="info"><div class="karte" id="infoKarte"></div></div>
+    <div class="ebene oben versteckt" id="ende"><div class="karte ende" id="endeKarte"></div></div>
+  </div>
+  <div class="tasten">
+    <button class="knopf priv" type="button" data-w="privat" disabled>← zu Hause<small>privat</small></button>
+    <button class="knopf zur" type="button" data-w="ungueltig" disabled>↓ zurück<small>ungültig</small></button>
+    <button class="knopf oeff" type="button" data-w="oeffentlich" disabled>Internet →<small>öffentlich</small></button>
+  </div>
+</div>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /*IP*/
+  /* IPv4 wie im Unterricht: genau vier Zahlen von 0 bis 255, durch Punkte getrennt.
+     Privat: 192.168.x.x, 10.x.x.x, 172.16.x.x bis 172.31.x.x; jede andere gültige Adresse ist hier öffentlich.
+     Die Zuordnung wird immer gerechnet, nie von Hand gesetzt. */
+  const IP = {};
+  const g = U.ganz;
+  IP.ZW = ["keine", "eine", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht"];
+  IP.pruefe = s => {
+    const t = String(s).split(".");
+    if (t.length < 4) return { ok: false, grund: `nur ${IP.ZW[t.length]} Zahlen` };
+    if (t.length > 4) return { ok: false, grund: `${IP.ZW[t.length]} Zahlen statt vier` };
+    for (const x of t) {
+      if (x === "") return { ok: false, grund: "ein Teil ist leer (zwei Punkte hintereinander)" };
+      const b = x.match(/[a-zA-ZäöüÄÖÜß]/);
+      if (b) return { ok: false, grund: `Buchstabe „${b[0]}“ statt Zahl` };
+      if (!/^\d+$/.test(x)) return { ok: false, grund: `„${x}“ ist keine Zahl` };
+      if (Number(x) > 255) return { ok: false, grund: `${x} ist größer als 255` };
+    }
+    const rand = t.some(x => x === "0" || x === "255");
+    return { ok: true, grund: "vier Zahlen, alle von 0 bis 255" + (rand ? " (0 und 255 sind erlaubt)" : "") };
+  };
+  /* nur für gültige Adressen: privat oder öffentlich, mit Erkennungszeichen */
+  IP.art = s => {
+    const [a, b] = String(s).split(".").map(Number);
+    if (a === 10) return { privat: true, zeichen: "fängt mit 10 an" };
+    if (a === 192 && b === 168) return { privat: true, zeichen: "fängt mit 192.168 an" };
+    if (a === 172 && b >= 16 && b <= 31) return { privat: true, zeichen: `172.${b} liegt zwischen 172.16 und 172.31` };
+    if (a === 172) return { privat: false, zeichen: `172.${b} liegt nicht zwischen 172.16 und 172.31` };
+    if (a === 192) return { privat: false, zeichen: `fängt mit 192.${b} an, nicht mit 192.168` };
+    if (a >= 100 && a <= 109) return { privat: false, zeichen: `fängt mit ${a} an, nicht mit 10` };
+    return { privat: false, zeichen: "nicht 192.168, nicht 10, nicht 172.16 bis 172.31" };
+  };
+  IP.typ = s => !IP.pruefe(s).ok ? "ungueltig" : IP.art(s).privat ? "privat" : "oeffentlich";
+  /* schon auf Folie/AB oder aus dem Huber-Beispiel: in den Pools nicht verwenden */
+  IP.SCHON = new Set(("192.168.0.1 256.10.4.7 10.0.0 172.16.254.1 192.168.1.300 8.8.8.8 192.168.178.20 10.0.0.5 172.20.4.1 " +
+    "172.40.4.1 192.168.5.44 300.12.1.1 172.16.0.256 8.8.4.4 192.168.1.1.5 10.0.0.7 172.40.5.20 172.16.5.20 192.168.178.1 " +
+    "91.12.44.7 192.168.2.1 192.168.2.10 192.168.2.11 192.168.2.12 192.168.2.13 84.153.27.9 142.250.185.78").split(" "));
+  IP.frei = s => !IP.SCHON.has(s) && !/^192\.168\.178\./.test(s);
+  /* erste Zahl für klar öffentliche Adressen (ausgedacht; keine 0, 10, 127, 172, 192, keine 224 und mehr) */
+  IP.ERSTE = [5, 31, 37, 46, 62, 77, 78, 79, 80, 81, 82, 84, 85, 87, 88, 89, 93, 94, 95, 141, 145, 151, 176, 178, 185, 188,
+    193, 194, 195, 212, 213, 217];
+  IP.MACH = {
+    p192: () => [192, 168, U.wahl([g(0, 20), g(0, 254)]), g(2, 254)],
+    p10: () => [10, g(0, 255), g(0, 255), g(2, 254)],
+    p172: () => [172, U.wahl([16, 31, g(16, 31), g(16, 31)]), g(0, 255), g(2, 254)],
+    o: () => [U.wahl(IP.ERSTE), g(1, 254), g(0, 255), g(2, 254)],
+    o172: () => [172, U.wahl([15, 32, 40, 41, g(32, 99), g(1, 14), g(100, 240)]), g(0, 255), g(2, 254)],
+    o192: () => [192, U.wahl([167, 169, 186, 68]), g(0, 255), g(2, 254)],
+    o10: () => [U.wahl([101, 102, 104, 105, 106, 107, 108, 109]), g(1, 254), g(0, 255), g(2, 254)]
+  };
+  IP.BUCHST = ["1a", "x", "4b", "e", "2c", "7f", "ab", "k3", "d"];
+  /* art: Schlüssel aus IP.MACH (gültig) oder gross, g256, drei, fuenf, buchstabe, leer (ungültig) */
+  IP.neu = art => {
+    for (let n = 0; n < 200; n++) {
+      let t;
+      if (IP.MACH[art]) t = IP.MACH[art]();
+      else {
+        t = IP.MACH[U.wahl(["p192", "p192", "p10", "o", "p172"])]();
+        const i = g(0, 3);
+        if (art === "gross") t[i] = U.wahl([g(256, 299), g(300, 999), g(300, 400)]);
+        if (art === "g256") t[i] = 256;
+        if (art === "drei") t.splice(g(1, 3), 1);
+        if (art === "fuenf") t.splice(g(1, 4), 0, g(0, 255));
+        if (art === "buchstabe") t[g(1, 3)] = U.wahl(IP.BUCHST);
+        if (art === "leer") t[g(1, 2)] = "";
+      }
+      const s = t.join(".");
+      if (IP.frei(s)) return s;
+    }
+    throw new Error("kein freies " + art);
+  };
+  /*ENDIP*/
+
+  /* Stufen: Mischung der Paketarten (Gewichte), Zeit je Paket in Sekunden, richtige Pakete bis zur nächsten Stufe */
+  const STUFEN = [null,
+    { mix: { p192: 1, p10: 1, o: 2 }, zeit: 6, name: "" },
+    { mix: { p172: 3, o172: 3, p192: 1, p10: 1, o: 1 }, zeit: 5.5, name: "172.16 bis 172.31" },
+    { mix: { gross: 2, g256: 1, drei: 1, fuenf: 1, buchstabe: 1, leer: 0.5, p192: 1.5, p10: 1, p172: 1.5, o: 1.5, o172: 1.5 }, zeit: 5.5, name: "ungültige Adressen" },
+    { mix: { gross: 1.5, g256: 0.5, drei: 0.7, fuenf: 0.7, buchstabe: 0.7, leer: 0.4, p192: 1.5, p10: 1, p172: 2, o: 1, o172: 2, o192: 0.7, o10: 0.7 }, zeit: 4.6, name: "alles gemischt" }
+  ];
+  const stufeDaten = s => s < STUFEN.length ? STUFEN[s] : Object.assign({}, STUFEN[4], { zeit: Math.max(2.6, 4.6 - 0.4 * (s - 4)), name: "schneller" });
+  const PRO_STUFE = 8;
+  const NAME = { privat: "bleibt zu Hause (privat)", oeffentlich: "ins Internet (öffentlich)", ungueltig: "ungültig – zurück" };
+
+  const $ = id => document.getElementById(id);
+  const feld = $("feld"), platz = $("paketplatz");
+  let S = null, raf = 0, tLetzt = 0;
+  /* Knöpfe nur im laufenden Spiel aktiv */
+  function setStatus(x) { S.status = x; document.querySelectorAll(".tasten .knopf").forEach(b => b.disabled = x !== "lauf"); }
+
+  function ziehe() {
+    const mix = stufeDaten(S.stufe).mix, arten = Object.keys(mix), summe = arten.reduce((a, k) => a + mix[k], 0);
+    for (let n = 0; n < 50; n++) {
+      let r = Math.random() * summe, art = arten[0];
+      for (const k of arten) { r -= mix[k]; if (r < 0) { art = k; break; } }
+      const s = IP.neu(art);
+      if (!S.zuletzt.includes(s)) { S.zuletzt.push(s); if (S.zuletzt.length > 12) S.zuletzt.shift(); return s; }
+    }
+    return IP.neu("o");
+  }
+
+  function neuesPaket() {
+    const s = ziehe(), d = stufeDaten(S.stufe);
+    const dauer = d.zeit * (1 - Math.min(0.15, S.inStufe * 0.02));
+    S.paket = { s, typ: IP.typ(s), t: 0, dauer, aus: false };
+    platz.innerHTML = `<div class="paket" id="paket" aria-live="polite"><div class="kl">DATENPAKET AN</div>` +
+      `<div class="adr">${U.esc(s)}</div><div class="uhr"><i id="uhr"></i></div></div>`;
+    const el = $("paket");
+    el.animate([{ transform: "translateY(-50%) translateY(-90px) scale(.9)", opacity: 0 }, { transform: "translateY(-50%)", opacity: 1 }],
+      { duration: 200, easing: "ease-out" });
+    wischen(el);
+  }
+
+  /* ---------- Schleife: Zeit je Paket ---------- */
+  function schritt(t) {
+    raf = 0;
+    if (!S || S.status !== "lauf") return;
+    const dt = Math.min(0.05, (t - (tLetzt || t)) / 1000); tLetzt = t;
+    const p = S.paket;
+    if (p && !p.aus && !S.zieht) {
+      p.t += dt;
+      const rest = Math.max(0, 1 - p.t / p.dauer), u = $("uhr");
+      if (u) { u.style.width = (rest * 100) + "%"; u.classList.toggle("knapp", rest < 0.3); }
+      if (rest <= 0) { p.aus = true; fehler(p, null); return; }
+    }
+    raf = requestAnimationFrame(schritt);
+  }
+  function weiterLaufen() { if (raf) cancelAnimationFrame(raf); tLetzt = 0; raf = requestAnimationFrame(schritt); }
+
+  /* ---------- Entscheidung ---------- */
+  function entscheide(wahl, schonGeflogen) {
+    if (!S || S.status !== "lauf" || !S.paket || S.paket.aus) return;
+    const p = S.paket, el = $("paket"); p.aus = true;
+    if (wahl !== p.typ) { if (el) { el.style.transform = ""; } return fehler(p, wahl); }
+    const plus = 10 * S.stufe; S.punkte += plus; S.gesamt++; S.inStufe++;
+    hud(); zone(wahl, true);
+    const fx = document.createElement("div"); fx.className = "plus"; fx.textContent = "+" + plus; feld.appendChild(fx);
+    setTimeout(() => fx.remove(), 700);
+    if (el) {
+      el.classList.add("gut");
+      const ziel = wahl === "privat" ? "translate(-160%, -50%) rotate(-12deg)" : wahl === "oeffentlich" ? "translate(160%, -50%) rotate(12deg)" : "translate(0, 120%)";
+      el.style.transition = "transform .2s ease-in, opacity .2s"; el.style.transform = ziel; el.style.opacity = "0";
+    }
+    let warte = 220;
+    if (S.inStufe >= PRO_STUFE) {
+      S.stufe++; S.inStufe = 0; hud();
+      const n = stufeDaten(S.stufe).name;
+      $("banner").innerHTML = `<b>Stufe ${S.stufe}</b>${n ? `<span>${n}</span>` : ""}`;
+      $("banner").classList.remove("versteckt"); warte = 1300;
+      setTimeout(() => $("banner").classList.add("versteckt"), 1250);
+    }
+    setTimeout(() => { zone(wahl, false); if (S.status === "lauf" || S.status === "pause") { platz.innerHTML = ""; if (S.status === "lauf") neuesPaket(); else S.paket = null; } }, warte);
+  }
+  function zone(w, an) { feld.querySelectorAll(".ziel").forEach(z => z.classList.toggle("an", an && z.dataset.z === w)); }
+
+  /* Wischen: links privat, rechts öffentlich, unten ungültig */
+  function richtung(dx, dy) {
+    if (dy > Math.abs(dx)) return "ungueltig";
+    if (Math.abs(dx) >= Math.abs(dy)) return dx < 0 ? "privat" : "oeffentlich";
+    return null;
+  }
+  function wischen(el) {
+    let id = null, x0 = 0, y0 = 0, t0 = 0, dx = 0, dy = 0;
+    const setze = (glatt) => {
+      el.style.transition = glatt ? "transform .2s ease-out" : "none";
+      el.style.transform = dx || dy ? `translate(${dx}px, calc(-50% + ${Math.max(-30, dy)}px)) rotate(${dx / 25}deg)` : "translateY(-50%)";
+      const r = Math.hypot(dx, dy) > 45 ? richtung(dx, dy) : null;
+      zone(r, !!r);
+    };
+    el.addEventListener("pointerdown", e => {
+      if (!S || S.status !== "lauf" || S.paket.aus || id !== null || (e.pointerType === "mouse" && e.button !== 0)) return;
+      id = e.pointerId; x0 = e.clientX; y0 = e.clientY; t0 = performance.now(); dx = dy = 0; S.zieht = true;
+      try { el.setPointerCapture(id); } catch (err) { /* egal */ }
+    });
+    el.addEventListener("pointermove", e => { if (e.pointerId === id) { dx = e.clientX - x0; dy = e.clientY - y0; setze(false); } });
+    const los = e => {
+      if (e.pointerId !== id) return;
+      id = null; S.zieht = false;
+      const weit = Math.hypot(dx, dy), v = weit / Math.max(1, performance.now() - t0), r = richtung(dx, dy);
+      if (e.type === "pointerup" && r && (weit > 80 || (weit > 35 && v > 0.5))) entscheide(r);
+      else { dx = dy = 0; setze(true); }
+    };
+    el.addEventListener("pointerup", los);
+    el.addEventListener("pointercancel", los);
+  }
+
+  /* ---------- Fehler: Spiel hält an und zeigt den Grund ---------- */
+  function grund(p) {
+    if (p.typ === "ungueltig") return `${IP.pruefe(p.s).grund} → ungültig, zurück.`;
+    const a = IP.art(p.s);
+    return `${a.zeichen} → ${a.privat ? "privat, bleibt zu Hause" : "öffentlich, geht ins Internet"}.`;
+  }
+  function fehler(p, wahl) {
+    S.leben--; S.fehler.push({ s: p.s, typ: p.typ, wahl }); hud();
+    setStatus("info"); $("pause").disabled = true;
+    const el = $("paket");
+    if (el) { el.classList.add("falsch"); el.animate([{ translate: "-6px 0" }, { translate: "6px 0" }, { translate: "0 0" }], { duration: 120, iterations: 3 }); }
+    const letzte = S.leben <= 0;
+    setTimeout(() => {
+      $("infoKarte").innerHTML =
+        `<h1 class="titel-bad">${wahl ? "Falsch sortiert" : "Zu langsam"}</h1>` +
+        `<div class="gross-ip">${U.esc(p.s)}</div>` +
+        `<p>Richtig: <b>${NAME[p.typ]}</b></p><p>${U.esc(grund(p))}</p>` +
+        (wahl === "ungueltig" && p.typ !== "ungueltig" ? `<p class="klein">Die Adresse ist gültig: vier Zahlen von 0 bis 255.</p>` : "") +
+        `<p class="klein">${letzte ? "Kein Leben mehr." : S.leben === 1 ? "Noch 1 Leben." : `Noch ${S.leben} Leben.`}</p>` +
+        `<button class="knopf breit" type="button" id="infoWeiter">${letzte ? "Zum Ergebnis" : "Weiter"}</button>`;
+      $("info").classList.remove("versteckt"); $("info").scrollTop = 0;
+      const b = $("infoWeiter"); b.focus({ preventScroll: true });
+      b.onclick = () => {
+        $("info").classList.add("versteckt");
+        if (letzte) return ende();
+        setStatus("lauf"); $("pause").disabled = false; neuesPaket(); weiterLaufen();
+      };
+    }, 450);
+  }
+
+  /* ---------- Pause ---------- */
+  function pause() {
+    if (!S || S.status !== "lauf") return;
+    setStatus("pause"); $("pause").disabled = true;
+    $("infoKarte").innerHTML = `<h1>Pause</h1><p>Punkte: ${S.punkte} · Stufe ${S.stufe}</p>` +
+      `<button class="knopf breit" type="button" id="infoWeiter">Weiter</button>`;
+    $("info").classList.remove("versteckt");
+    $("infoWeiter").onclick = () => {
+      $("info").classList.add("versteckt"); setStatus("lauf"); $("pause").disabled = false;
+      if (!S.paket || S.paket.aus) neuesPaket();
+      weiterLaufen();
+    };
+  }
+  $("pause").onclick = pause;
+  document.addEventListener("visibilitychange", () => { if (document.hidden) pause(); });
+  window.addEventListener("blur", pause);
+
+  /* ---------- Anzeige, Start, Ende ---------- */
+  function hud() {
+    $("pkt").textContent = S.punkte; $("stufe").textContent = S.stufe;
+    const l = $("leben"); l.setAttribute("aria-label", `${Math.max(0, S.leben)} Leben`);
+    [...l.children].forEach((i, n) => i.classList.toggle("aus", n >= S.leben));
+  }
+  function rekordText() {
+    const r = U.rekord("informatik-paketpost").wert;
+    $("rekordStart").textContent = r > 0 ? `Dein Rekord: ${r} Punkte` : "";
+  }
+  function starte() {
+    ["start", "ende", "info"].forEach(id => $(id).classList.add("versteckt"));
+    S = { punkte: 0, stufe: 1, leben: 3, inStufe: 0, gesamt: 0, fehler: [], zuletzt: [], status: "lauf", paket: null, zieht: false };
+    setStatus("lauf"); hud(); $("pause").disabled = false; neuesPaket(); weiterLaufen();
+  }
+  function ende() {
+    setStatus("ende"); S.paket = null; platz.innerHTML = ""; $("pause").disabled = true;
+    const r = U.rekord("informatik-paketpost", S.punkte);
+    let h = `<div class="kopf">Spiel vorbei</div><div class="gross">${S.punkte} Punkte</div>` +
+      `<p>Stufe ${S.stufe} · ${S.gesamt} Pakete richtig sortiert</p>` +
+      `<p class="klein">${r.neu ? "Neuer Rekord." : `Dein Rekord: ${r.wert} Punkte`}</p>`;
+    if (S.fehler.length) h += `<ul class="liste">` + S.fehler.map(f => `<li><span class="ip">${U.esc(f.s)}</span>: <b>${NAME[f.typ]}</b>` +
+      `<br><span class="klein">${f.wahl ? "Deine Wahl: " + NAME[f.wahl] : "zu langsam"} · ${U.esc(grund(f))}</span></li>`).join("") + "</ul>";
+    h += `<button class="knopf breit" type="button" id="nochmal">Nochmal</button>`;
+    $("endeKarte").innerHTML = h;
+    $("ende").classList.remove("versteckt"); $("ende").scrollTop = 0;
+    $("nochmal").onclick = starte;
+  }
+
+  document.querySelectorAll(".tasten [data-w]").forEach(b => b.onclick = () => entscheide(b.dataset.w));
+  document.addEventListener("keydown", e => {
+    const w = { ArrowLeft: "privat", ArrowRight: "oeffentlich", ArrowDown: "ungueltig" }[e.key];
+    if (w) { e.preventDefault(); entscheide(w); }
+  });
+  $("los").onclick = starte;
+  rekordText();
+  window.__test = { IP, STUFEN, stufeDaten, spiel: () => S };
+})();
+</script>
+</body>
+</html>
