@@ -13,4 +13,4 @@ Leerzeichen und Bindestrich, höchstens 24 Zeichen.
 
 Standardmäßig bekommen alle dieselben Aufgaben: Der Zufall hat einen festen Startwert aus der Adresse der Übung (und
 dem Wort aus `?ha=`). „Neue Runde“ wiederholt dieselben Aufgaben. Mit `?zufall=1` gibt es bei jeder Runde neue
-Aufgaben (endlos üben). Die Spiele (Blasen, Paketpost) würfeln immer frei.
+Aufgaben (endlos üben). Die Spiele (Blasen, Paketpost) und der Kopfrechen-Sprint (Warm-up-Ritual) würfeln immer frei.
