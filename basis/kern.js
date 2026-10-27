@@ -4,6 +4,26 @@
   "use strict";
   const U = {};
 
+  /* ---------- Gleiche Aufgaben für alle (Standard) ----------
+     Ohne ?zufall=1 erzeugt jede Übung für alle dieselben Aufgaben: Math.random wird durch einen Zufallsgenerator mit
+     festem Startwert ersetzt (aus Seitenpfad und ?ha=Wort). „Neue Runde“ beginnt wieder beim Startwert, also mit
+     denselben Aufgaben. Mit ?zufall=1 bleibt der Zufall frei (endlos neue Aufgaben). Spiele setzen
+     <body data-zufall="frei">. */
+  const PARAM = (() => { try { return new URLSearchParams(location.search); } catch (e) { return new URLSearchParams(); } })();
+  U.frei = PARAM.get("zufall") === "1" || (document.body && document.body.dataset.zufall === "frei");
+  const fnv = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const START = fnv(location.pathname.replace(/index\.html$/, "") + "|" + (PARAM.get("ha") || ""));
+  let zustand = START;
+  const mulberry = () => { zustand = (zustand + 0x6D2B79F5) >>> 0; let t = zustand;
+    t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  U.zufallNeu = () => { zustand = START; };
+  if (!U.frei) {
+    Math.random = mulberry;
+    document.addEventListener("click", e => {
+      if (e.target.closest && e.target.closest("[data-neu],[data-nochmal],[data-start],#nochmal")) U.zufallNeu();
+    }, true);
+  }
+
   /* ---------- Zufall und Zahlen ---------- */
   U.ganz = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   U.wahl = arr => arr[Math.floor(Math.random() * arr.length)];
