@@ -382,6 +382,7 @@
     let h = `<div class="leiste"><h1>Schriftlich rechnen</h1></div><div class="karte ende"><div class="kopf">Geschafft · Stufe ${STUFEN[stufe].st}</div>` +
       `<div class="gross">${runde.richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
       [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    h += U.haBox("Schriftlich rechnen · Stufe " + STUFEN[stufe].st, `${runde.richtig} von ${ANZAHL}`, U.haStartZeit);
     if (runde.fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` + runde.fehler.map(f =>
       `<li>${f.text} = ${f.loesung}<br><span class="klein">Deine Antwort: ${U.esc(f.gegeben)}</span></li>`).join("") + `</ul>`;
     h += `<div class="knoepfe"><button class="knopf breit" type="button" data-neu>Neue Runde</button>` +

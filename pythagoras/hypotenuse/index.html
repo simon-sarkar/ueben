@@ -122,6 +122,7 @@
     let h = `<div class="leiste"><h1>${TITEL}</h1></div><div class="karte ende"><div class="kopf">Geschafft</div>` +
       `<div class="gross">${richtig} von ${ANZAHL}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
       [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+    h += U.haBox(TITEL, `${richtig} von ${ANZAHL}`, U.haStartZeit);
     if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
       fehler.map(f => `<li>${f.frage}<br><span class="klein">Deine Antwort: ${f.gegeben} · richtig: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
     h += `<button class="knopf breit" type="button" data-neu>Neue Runde</button></div>`;

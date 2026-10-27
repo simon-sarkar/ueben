@@ -270,6 +270,7 @@
       `<div class="gross">${s.punkte} ${s.punkte === 1 ? "Punkt" : "Punkte"}</div>` +
       `<p class="zeile">${s.anzahl} ${s.anzahl === 1 ? "Aufgabe" : "Aufgaben"} beantwortet, ${s.fehler.length} falsch.</p>` +
       `<p class="zeile"><b>${r.neu && s.punkte > 0 ? "Neuer Rekord." : "Dein Rekord: " + r.wert}</b></p>`;
+    h += U.haBox("Kopfrechen-Sprint · Stufe " + STUFEN[stufe].st, `${s.punkte} Punkte, ${s.fehler.length} falsch`, U.haStartZeit);
     if (s.fehler.length) h += `<ul class="liste">` + s.fehler.map(f =>
       `<li>${f.voll}<br><span class="klein">Deine Antwort: ${U.esc(f.gegeben)}</span></li>`).join("") + `</ul>`;
     h += `<div class="knoepfe"><button class="knopf breit" type="button" data-nochmal>Nochmal</button>` +

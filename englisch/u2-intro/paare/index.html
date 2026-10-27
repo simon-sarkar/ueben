@@ -116,6 +116,7 @@
     $("feld").classList.add("versteckt"); $("leiste2").classList.add("versteckt");
     $("ende").innerHTML = `<div class="karte ende"><div class="kopf">${U.TEXTE.en.fertig}</div>` +
       `<div class="gross">${S.zuege} moves</div><p>${PAARE} pairs · ${mmss(sek())}</p>` +
+      U.haBox("Find the pairs", `${S.zuege} moves`, U.haStartZeit, "en") +
       (r.neu ? `<p class="neu">New best.</p>` : r.wert > 0 ? `<p class="klein">Best: ${100 - r.wert} moves</p>` : "") +
       `<ul class="paare">${S.wahl.map(w => `<li><span>${ohne(w[0])}</span><span lang="de">${ohne(w[1])}</span></li>`).join("")}</ul>` +
       `<button class="knopf breit" type="button" id="nochmal">${U.TEXTE.en.neu}</button></div>`;

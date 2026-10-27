@@ -341,6 +341,7 @@
     let h = `<div class="kopf">Spiel vorbei</div><div class="gross">${S.punkte} Punkte</div>` +
       `<p>Stufe ${S.stufe} · ${S.gesamtFang} rechtwinklige gefangen</p>` +
       `<p class="klein">${r.neu ? "Neuer Rekord." : `Dein Rekord: ${r.wert} Punkte`}</p>`;
+    h += U.haBox("Rechte Winkel fangen", `${S.punkte} Punkte`, U.haStartZeit);
     if (S.fehler.length) h += `<ul class="liste">` + S.fehler.map(f => `<li><b>${f.zeige.join(" · ")}</b>` +
       `<span class="klein"> (${f.art === "falsch" ? "falsch getippt" : "entkommen"})</span><div class="rechnung">${weg(f.z)}</div></li>`).join("") + "</ul>";
     h += `<button class="knopf breit" type="button" id="nochmal">Nochmal</button>`;

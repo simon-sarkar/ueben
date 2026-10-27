@@ -367,6 +367,7 @@
     let h = `<div class="kopf">Spiel vorbei</div><div class="gross">${S.punkte} Punkte</div>` +
       `<p>Stufe ${S.stufe} · ${S.gesamt} Pakete richtig sortiert</p>` +
       `<p class="klein">${r.neu ? "Neuer Rekord." : `Dein Rekord: ${r.wert} Punkte`}</p>`;
+    h += U.haBox("Paketpost", `${S.punkte} Punkte`, U.haStartZeit);
     if (S.fehler.length) h += `<ul class="liste">` + S.fehler.map(f => `<li><span class="ip">${U.esc(f.s)}</span>: <b>${NAME[f.typ]}</b>` +
       `<br><span class="klein">${f.wahl ? "Deine Wahl: " + NAME[f.wahl] : "zu langsam"} · ${U.esc(grund(f))}</span></li>`).join("") + "</ul>";
     h += `<button class="knopf breit" type="button" id="nochmal">Nochmal</button>`;

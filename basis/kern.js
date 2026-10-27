@@ -103,16 +103,38 @@
                einheit, weg (HTML: Rechenweg/Erklärung), spalten:2} */
   U.TEXTE = {
     de: { ok: ["Richtig.", "Stimmt.", "Genau.", "Gut gemacht."], falsch: "Nicht ganz.", pruefen: "Prüfen", weiter: "Weiter", zahl: "Zahl eingeben",
-          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Neue Runde mit neuen Aufgaben", von: "von" },
+          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Neue Runde mit neuen Aufgaben", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
     en: { ok: ["Right.", "Correct.", "Well done.", "Yes."], falsch: "Not quite.", pruefen: "Check", weiter: "Next", zahl: "Type a number",
-          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "New round", von: "of" }
+          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "New round", von: "of", ha: "Homework", dauer: "time" }
+  };
+  /* Hausaufgaben-Nachweis: ?ha=Wort in der Adresse (vom QR-Code der Lehrkraft); erscheint nur auf dem Schlussbild
+     mit Datum, Uhrzeit und Punkten, damit ein Screenshot als Abgabe taugt. Nur Buchstaben, Ziffern, Leerzeichen, - */
+  U.haWort = (() => { try {
+    const w = new URLSearchParams(location.search).get("ha") || new URLSearchParams(location.hash.slice(1)).get("ha") || "";
+    return w.replace(/[^\p{L}\p{N} -]/gu, "").trim().slice(0, 24);
+  } catch (e) { return ""; } })();
+  /* Start der Bearbeitung: Laden der Seite, jede neue Runde setzt neu */
+  U.haStartZeit = Date.now();
+  document.addEventListener("click", e => {
+    if (e.target.closest && e.target.closest("[data-neu],[data-nochmal],[data-start],#nochmal,#start")) U.haStartZeit = Date.now();
+  }, true);
+  /* Kasten für das Schlussbild: Wort, Übung, Ergebnis, Datum/Uhrzeit, Bearbeitungsdauer; leer ohne ?ha= */
+  U.haBox = (titel, ergebnis, startMs, sprache) => {
+    startMs = startMs || U.haStartZeit;
+    if (!U.haWort) return "";
+    const L = U.TEXTE[sprache || "de"], jetzt = new Date(), sek = Math.max(0, Math.round((jetzt - startMs) / 1000));
+    const d = jetzt.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }),
+      z = jetzt.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      dauer = Math.floor(sek / 60) + ":" + String(sek % 60).padStart(2, "0");
+    return `<div class="ha-nachweis"><span class="klein">${L.ha}</span><b>${U.esc(U.haWort)}</b>` +
+      `<span>${U.esc(titel)} · ${ergebnis}</span><span class="klein">${d}, ${z} · ${L.dauer} ${dauer} min</span></div>`;
   };
   /* Text vergleichen: Groß/klein, Leerzeichen, Apostroph-Varianten egal */
   U.textGleich = (a, b) => { const n = x => String(x).trim().toLowerCase().replace(/[’‘`´]/g, "'").replace(/\s+/g, " "); return n(a) === n(b); };
   U.runde = cfg => {
     const L = U.TEXTE[cfg.sprache || "de"];
     const ziel = cfg.ziel || document.querySelector("#app");
-    let nr = 0, richtig = 0, fehler = [], keys = new Set(), aufg = null;
+    let nr = 0, richtig = 0, fehler = [], keys = new Set(), aufg = null, start = Date.now();
     const kopf = () => `<div class="leiste"><h1>${cfg.titel}</h1><span class="punkte">${richtig} / ${cfg.anzahl}</span></div>` +
       `<div class="balken"><i style="width:${100 * nr / cfg.anzahl}%"></i></div>`;
     function neu() {
@@ -181,11 +203,12 @@
       let h = `<div class="leiste"><h1>${cfg.titel}</h1></div><div class="karte ende"><div class="kopf">${L.fertig}</div>` +
         `<div class="gross">${richtig} ${L.von} ${cfg.anzahl}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
         [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
+      h += U.haBox(cfg.titel, `${richtig} ${L.von} ${cfg.anzahl}`, start, cfg.sprache);
       if (fehler.length) h += `<p class="klein">${L.nochmal}</p><ul class="liste">` +
         fehler.map(f => `<li>${f.frage}<br><span class="klein">${L.deine}: ${f.gegeben} · ${L.richtig}: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
       h += `<button class="knopf breit" type="button" data-neu>${L.neu}</button></div>`;
       ziel.innerHTML = h;
-      ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); zeige(); window.scrollTo(0, 0); };
+      ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); start = Date.now(); zeige(); window.scrollTo(0, 0); };
     }
     zeige();
   };

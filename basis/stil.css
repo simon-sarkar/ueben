@@ -80,6 +80,9 @@ h1 { font-size: 1.5em; } h2 { font-size: 1.25em; }
 .ende .gross { font-family: var(--kopf); font-weight: 600; font-size: 2.6em; color: var(--hue); margin: 6px 0; }
 .sterne { font-size: 2.2em; letter-spacing: 6px; color: var(--akzent); }
 .sterne .aus { color: var(--line); }
+.ha-nachweis { display: flex; flex-direction: column; gap: 2px; margin: 12px auto 4px; padding: 10px 14px; max-width: 20rem;
+  border: 2px dashed var(--hue); border-radius: 12px; background: var(--bg); }
+.ha-nachweis b { font-family: var(--kopf); font-size: 1.6em; color: var(--hue); letter-spacing: 1px; }
 .liste { text-align: left; margin: 14px 0; padding: 0; list-style: none; }
 .liste li { padding: 8px 0; border-bottom: 1px solid var(--line); }
 .klein { font-size: .9em; color: var(--muted); }
