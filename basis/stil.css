@@ -6,7 +6,7 @@
   --hue: #975214; --akzent: #E07A1F; --tint: #eee3d9;
   --merke: #faeadb; --merke-t: #975214; --hinweis: #dbfafa; --hinweis-t: #107876;
   --aufgabe: #faf9db; --aufgabe-t: #787510; --beispiel: #dbebfa; --beispiel-t: #145897;
-  --ok: #166534; --okbg: #ECFDF3; --bad: #B42318; --badbg: #FEF3F2;
+  --ok: #166534; --okbg: #ECFDF3; --bad: #B42318; --badbg: #FEF3F2; --knopf-t: #fff; --feld: #fff;
   --kopf: "Lexend", "Segoe UI", "Trebuchet MS", Arial, sans-serif;
   --grund: "Segoe UI", "Trebuchet MS", Roboto, Arial, sans-serif;
   --welle: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22 viewBox=%220 0 100 100%22%3E%3Cpath d=%22M6 6.6C30 4.8 64 7.9 94 5.8C95.5 32 93.3 66 94.3 94.1C66 95.6 32 93.1 5.9 94.3C4.5 66 6.9 34 6 6.6Z%22 fill=%22none%22 stroke=%22%23975214%22 stroke-width=%222.4%22 stroke-linejoin=%22round%22 stroke-linecap=%22round%22/%3E%3C/svg%3E");
@@ -41,13 +41,13 @@ h1 { font-size: 1.5em; } h2 { font-size: 1.25em; }
 .kasten.aufgabe .titel { color: var(--aufgabe-t); } .kasten.beispiel .titel { color: var(--beispiel-t); }
 .frage { font-size: 1.12em; margin: 0 0 12px; }
 .nr { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%;
-  background: var(--hue); color: #fff; font-family: var(--kopf); font-weight: 600; margin-right: 8px; flex: none; }
+  background: var(--hue); color: var(--knopf-t); font-family: var(--kopf); font-weight: 600; margin-right: 8px; flex: none; }
 .bild { display: block; margin: 6px auto 12px; max-width: 100%; height: auto; }
 .bild text { font-family: var(--kopf); font-weight: 600; }
 
 /* Knöpfe */
 .knopf { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px;
-  padding: 10px 20px; border: 0; border-radius: 14px; background: var(--hue); color: #fff;
+  padding: 10px 20px; border: 0; border-radius: 14px; background: var(--hue); color: var(--knopf-t);
   font: 600 1em var(--kopf); cursor: pointer; text-decoration: none; touch-action: manipulation; }
 .knopf:active { transform: translateY(1px); }
 .knopf.zwei { background: var(--card); color: var(--hue); box-shadow: inset 0 0 0 2px var(--hue); }
@@ -64,7 +64,7 @@ h1 { font-size: 1.5em; } h2 { font-size: 1.25em; }
 /* Eingabe */
 .eingabe { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .eingabe input { font: 600 1.2em var(--grund); width: 9em; max-width: 100%; min-height: 52px; padding: 8px 12px;
-  border: 2px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
+  border: 2px solid var(--line); border-radius: 12px; background: var(--feld); color: var(--ink); }
 .eingabe input:focus { outline: 3px solid var(--akzent); outline-offset: 1px; }
 .eingabe .einheit { font-weight: 600; color: var(--muted); }
 
@@ -94,3 +94,23 @@ sup { font-size: .7em; line-height: 0; }
 .knoepfe-mehr a.knopf { text-align: center; text-decoration: none; }
 .leiste .klein-knopf { padding: 6px 12px; min-height: 0; font-size: .85em; margin-left: 8px; }
 .ende .zeile { margin: 4px 0; }
+
+/* ---------- Designs: ?design=<name> an der Adresse (kern.js setzt data-design); ohne Angabe „wellig“ ---------- */
+[data-design] .karte, [data-design] .kasten { border-image: none; }
+[data-design="tinte"] { --ink: #1B2433; --muted: #4B566B; --line: #DCE5F0; --bg: #F5F8FC; --card: #fff; --hue: #2B5A8F;
+  --akzent: #3E7CC4; --tint: #E3ECF7; }
+[data-design="tinte"] .karte { border: 2px solid var(--line); border-radius: 14px; }
+[data-design="salbei"] { --ink: #1F2A1A; --muted: #4F5D46; --line: #D9E3CE; --bg: #F4F7F0; --card: #fff; --hue: #4A6B36;
+  --akzent: #6E9A4E; --tint: #E6EEDD; }
+[data-design="salbei"] .karte { border: 2px solid #CBD9BC; border-radius: 18px; }
+[data-design="lagune"] { --ink: #13302C; --muted: #45605B; --line: #D3EAE5; --bg: #FFFFFF; --card: #F2FAF8; --hue: #1D6D63;
+  --akzent: #2F9E8F; --tint: #E1F3EF; }
+[data-design="lagune"] .karte { border: 0; border-radius: 20px; box-shadow: 0 2px 12px rgba(19, 48, 44, .08); }
+[data-design="pflaume"] { --ink: #2A1A28; --muted: #5E4A5B; --line: #EADBE7; --bg: #FBF6FA; --card: #fff; --hue: #7D3F74;
+  --akzent: #B35FA6; --tint: #F3E6F0; }
+[data-design="pflaume"] .karte { border: 3px dashed #D7B9D1; border-radius: 22px; }
+[data-design="nacht"] { --ink: #E8ECF4; --muted: #A9B1C3; --line: #343B4E; --bg: #13161E; --card: #1D2130; --hue: #9DC0EA;
+  --akzent: #E8B04F; --tint: #262B3C; --ok: #7EE2A8; --okbg: #153424; --bad: #FFA4A0; --badbg: #3D1A18;
+  --knopf-t: #13161E; --feld: #262B3C; --merke: #2E2A22; --hinweis: #1D2E31; --aufgabe: #2D2C1F; --beispiel: #1E2838; }
+[data-design="nacht"] .karte { border: 2px solid var(--line); border-radius: 14px; }
+[data-design="nacht"] .bild { filter: invert(.88) hue-rotate(180deg); }

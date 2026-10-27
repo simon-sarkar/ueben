@@ -17,3 +17,9 @@ Rechnen und IP-Adressen; feste Listen wie Vokabeln nicht) (neue Zufallsaufgaben,
 stehen, daneben ∞ richtig/beantwortet, z. B. „8/10 · ∞ 18/20“; „Ergebnis“ zeigt beides und den Nachweis), „Wiederholen“
 (dieselben Aufgaben) und „Zurück zur Auswahl“. Übungen mit eigenem Aufbau, die neue Aufgaben erzeugen können (Bausteine, Dreieck antippen, schriftlich,
 privat/öffentlich), haben „Neue zufällige Aufgaben“. Mit `?zufall=1` gibt es von Anfang an bei jeder Runde neue Aufgaben. Die Spiele (Blasen, Paketpost) und der Kopfrechen-Sprint (Warm-up-Ritual) würfeln immer frei.
+
+## Designs
+
+`?design=` an der Adresse wählt das Aussehen: `wellig` (Standard), `tinte`, `salbei`, `lagune`, `pflaume`, `nacht`.
+`?farbe=2b5a8f` setzt eine eigene Farbe für Knöpfe, Nummern und Fortschritt. Beides geht auch fest in einer Seite
+(`<html data-design="tinte" data-farbe="#2b5a8f">`).

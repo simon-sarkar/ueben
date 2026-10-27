@@ -10,6 +10,14 @@
      denselben Aufgaben. Mit ?zufall=1 bleibt der Zufall frei (endlos neue Aufgaben). Spiele setzen
      <body data-zufall="frei">. */
   const PARAM = (() => { try { return new URLSearchParams(location.search); } catch (e) { return new URLSearchParams(); } })();
+  /* Design aus der Adresse (?design=tinte); unbekannte Namen bleiben beim Standard */
+  U.DESIGNS = ["wellig", "tinte", "salbei", "lagune", "pflaume", "nacht"];
+  { const d = PARAM.get("design") || document.documentElement.dataset.design;
+    if (d && d !== "wellig" && U.DESIGNS.includes(d)) document.documentElement.dataset.design = d;
+    else delete document.documentElement.dataset.design;
+    /* eigene Farbe: ?farbe=2b5a8f oder <html data-farbe="#2b5a8f">; Knöpfe, Nummern, Punkte, Fortschritt */
+    const f = (PARAM.get("farbe") || document.documentElement.dataset.farbe || "").replace("#", "");
+    if (/^[0-9a-fA-F]{6}$/.test(f)) { const r = document.documentElement.style; r.setProperty("--hue", "#" + f); r.setProperty("--akzent", "#" + f); } }
   U.frei = PARAM.get("zufall") === "1" || (document.body && document.body.dataset.zufall === "frei");
   const fnv = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
   const START = fnv(location.pathname.replace(/index\.html$/, "") + "|" + (PARAM.get("ha") || ""));
