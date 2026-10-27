@@ -141,9 +141,9 @@
                einheit, weg (HTML: Rechenweg/Erklärung), spalten:2} */
   U.TEXTE = {
     de: { ok: ["Richtig.", "Stimmt.", "Genau.", "Gut gemacht."], falsch: "Nicht ganz.", pruefen: "Prüfen", weiter: "Weiter", zahl: "Zahl eingeben",
-          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Wiederholen", neuFrei: "Neue Runde", zufall: "Neue zufällige Aufgaben", zurueck: "Zurück zur Auswahl", endlos: "Endlos weiterüben", beenden: "Beenden", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
+          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Wiederholen", neuFrei: "Neue Runde", zufall: "Neue zufällige Aufgaben", zurueck: "Zurück zur Auswahl", endlos: "Endlos weiterüben", beenden: "Ergebnis", weiterEndlos: "Weiter endlos üben", endlosKurz: "Endlos", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
     en: { ok: ["Right.", "Correct.", "Well done.", "Yes."], falsch: "Not quite.", pruefen: "Check", weiter: "Next", zahl: "Type a number",
-          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "Try again", neuFrei: "New round", zufall: "New random tasks", zurueck: "Back to the list", endlos: "Keep practising", beenden: "Stop", von: "of", ha: "Homework", dauer: "time" }
+          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "Try again", neuFrei: "New round", zufall: "New random tasks", zurueck: "Back to the list", endlos: "Keep practising", beenden: "Result", weiterEndlos: "Continue practising", endlosKurz: "Endless", von: "of", ha: "Homework", dauer: "time" }
   };
   /* Hausaufgaben-Nachweis: ?ha=Wort in der Adresse (vom QR-Code der Lehrkraft); erscheint nur auf dem Schlussbild
      mit Datum, Uhrzeit und Punkten, damit ein Screenshot als Abgabe taugt. Nur Buchstaben, Ziffern, Leerzeichen, - */
@@ -251,16 +251,18 @@
       let h = `<div class="leiste"><h1>${cfg.titel}</h1></div><div class="karte ende"><div class="kopf">${L.fertig}</div>` +
         `<div class="gross">${fest.richtig} ${L.von} ${fest.anzahl}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
         [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>" +
-        (endlos ? `<p class="zeile"><b>∞ ${er} ${L.von} ${ea}</b></p>` : "");
+        (endlos ? `<p class="zeile"><b>∞ ${L.endlosKurz}: ${er} ${L.von} ${ea}</b></p>` : "");
       h += U.haBox(cfg.titel, `${fest.richtig} ${L.von} ${fest.anzahl}${zusatz}`, start, cfg.sprache);
       if (fehler.length) h += `<p class="klein">${L.nochmal}</p><ul class="liste">` +
         fehler.map(f => `<li>${f.frage}<br><span class="klein">${L.deine}: ${f.gegeben} · ${L.richtig}: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
-      h += (endlos ? "" : `<button class="knopf breit" type="button" data-endlos>∞ ${L.endlos}</button>`) +
+      h += `<button class="knopf breit" type="button" ${endlos ? "data-endlos-weiter" : "data-endlos"}>∞ ${endlos ? L.weiterEndlos : L.endlos}</button>` +
         `<div class="knoepfe-mehr"><button class="knopf zwei breit" type="button" data-neu>${U.neuText(cfg.sprache)}</button>` +
         `<a class="knopf zwei breit" href="../">${L.zurueck}</a></div></div>`;
       ziel.innerHTML = h;
       ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); start = Date.now();
         endlos = false; erst = null; zeige(); window.scrollTo(0, 0); };
+      const w = ziel.querySelector("[data-endlos-weiter]");
+      if (w) w.onclick = () => { zeige(); window.scrollTo(0, 0); };   /* weiter, Punkte bleiben; nr zeigt auf die nächste Aufgabe */
       const e = ziel.querySelector("[data-endlos]");
       if (e) e.onclick = () => { U.zufallFrei(); erst = { richtig, anzahl: cfg.anzahl }; endlos = true; er = 0; ea = 0;
         nr = 0; keys = new Set(); zeige(); window.scrollTo(0, 0); };
