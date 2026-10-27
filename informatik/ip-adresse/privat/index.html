@@ -227,7 +227,7 @@
     if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
       fehler.map(f => `<li><span class="ip">${f.s}</span> ist <b>${name(IP.art(f.s).privat)}</b><br>` +
         `<span class="klein">${erklaerung(f.s)}</span></li>`).join("") + "</ul>";
-    h += `<button class="knopf breit" type="button" data-neu>Neue Runde mit neuen Karten</button></div>`;
+    h += `<button class="knopf breit" type="button" data-neu>${U.neuText()}</button>` + U.mehrKnoepfe() + `</div>`;
     app.innerHTML = h;
     app.querySelector("[data-neu]").onclick = start;
   }

@@ -17,12 +17,29 @@
   const mulberry = () => { zustand = (zustand + 0x6D2B79F5) >>> 0; let t = zustand;
     t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   U.zufallNeu = () => { zustand = START; };
+  const NATIV = Math.random;
   if (!U.frei) {
     Math.random = mulberry;
     document.addEventListener("click", e => {
       if (e.target.closest && e.target.closest("[data-neu],[data-nochmal],[data-start],#nochmal")) U.zufallNeu();
     }, true);
   }
+  /* „Neue zufällige Aufgaben“: ab jetzt freier Zufall, dann den Wiederholen-Knopf der Seite auslösen */
+  document.addEventListener("click", e => {
+    const k = e.target.closest && e.target.closest("[data-zufall-neu]");
+    if (!k) return;
+    e.preventDefault(); e.stopPropagation();
+    Math.random = NATIV; U.frei = true;
+    const neu = document.querySelector("[data-neu],[data-nochmal],#nochmal");
+    if (neu) neu.click();
+  }, true);
+  /* Knöpfe unter „Wiederholen“: neue zufällige Aufgaben (nur wenn nicht schon frei) und zurück zur Auswahl */
+  U.mehrKnoepfe = sprache => {
+    const L = U.TEXTE[sprache || "de"];
+    return `<div class="knoepfe-mehr">` + (U.frei ? "" : `<button class="knopf zwei breit" type="button" data-zufall-neu>${L.zufall}</button>`) +
+      `<a class="knopf zwei breit" href="../">${L.zurueck}</a></div>`;
+  };
+  U.neuText = sprache => { const L = U.TEXTE[sprache || "de"]; return U.frei ? L.neuFrei : L.neu; };
 
   /* ---------- Zufall und Zahlen ---------- */
   U.ganz = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -123,9 +140,9 @@
                einheit, weg (HTML: Rechenweg/Erklärung), spalten:2} */
   U.TEXTE = {
     de: { ok: ["Richtig.", "Stimmt.", "Genau.", "Gut gemacht."], falsch: "Nicht ganz.", pruefen: "Prüfen", weiter: "Weiter", zahl: "Zahl eingeben",
-          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Neue Runde mit neuen Aufgaben", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
+          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Wiederholen", neuFrei: "Neue Runde", zufall: "Neue zufällige Aufgaben", zurueck: "Zurück zur Auswahl", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
     en: { ok: ["Right.", "Correct.", "Well done.", "Yes."], falsch: "Not quite.", pruefen: "Check", weiter: "Next", zahl: "Type a number",
-          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "New round", von: "of", ha: "Homework", dauer: "time" }
+          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "Try again", neuFrei: "New round", zufall: "New random tasks", zurueck: "Back to the list", von: "of", ha: "Homework", dauer: "time" }
   };
   /* Hausaufgaben-Nachweis: ?ha=Wort in der Adresse (vom QR-Code der Lehrkraft); erscheint nur auf dem Schlussbild
      mit Datum, Uhrzeit und Punkten, damit ein Screenshot als Abgabe taugt. Nur Buchstaben, Ziffern, Leerzeichen, - */
@@ -226,7 +243,7 @@
       h += U.haBox(cfg.titel, `${richtig} ${L.von} ${cfg.anzahl}`, start, cfg.sprache);
       if (fehler.length) h += `<p class="klein">${L.nochmal}</p><ul class="liste">` +
         fehler.map(f => `<li>${f.frage}<br><span class="klein">${L.deine}: ${f.gegeben} · ${L.richtig}: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
-      h += `<button class="knopf breit" type="button" data-neu>${L.neu}</button></div>`;
+      h += `<button class="knopf breit" type="button" data-neu>${U.neuText(cfg.sprache)}</button>` + U.mehrKnoepfe(cfg.sprache) + "</div>";
       ziel.innerHTML = h;
       ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); start = Date.now(); zeige(); window.scrollTo(0, 0); };
     }

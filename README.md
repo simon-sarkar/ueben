@@ -12,5 +12,5 @@ Leerzeichen und Bindestrich, höchstens 24 Zeichen.
 ## Gleiche Aufgaben für alle
 
 Standardmäßig bekommen alle dieselben Aufgaben: Der Zufall hat einen festen Startwert aus der Adresse der Übung (und
-dem Wort aus `?ha=`). „Neue Runde“ wiederholt dieselben Aufgaben. Mit `?zufall=1` gibt es bei jeder Runde neue
-Aufgaben (endlos üben). Die Spiele (Blasen, Paketpost) und der Kopfrechen-Sprint (Warm-up-Ritual) würfeln immer frei.
+dem Wort aus `?ha=`). Am Ende stehen drei Knöpfe: „Wiederholen“ (dieselben Aufgaben), „Neue zufällige Aufgaben“ (ab dann endlos neue)
+und „Zurück zur Auswahl“. Mit `?zufall=1` gibt es von Anfang an bei jeder Runde neue Aufgaben. Die Spiele (Blasen, Paketpost) und der Kopfrechen-Sprint (Warm-up-Ritual) würfeln immer frei.

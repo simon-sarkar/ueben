@@ -385,8 +385,8 @@
     h += U.haBox("Schriftlich rechnen · Stufe " + STUFEN[stufe].st, `${runde.richtig} von ${ANZAHL}`, U.haStartZeit);
     if (runde.fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` + runde.fehler.map(f =>
       `<li>${f.text} = ${f.loesung}<br><span class="klein">Deine Antwort: ${U.esc(f.gegeben)}</span></li>`).join("") + `</ul>`;
-    h += `<div class="knoepfe"><button class="knopf breit" type="button" data-neu>Neue Runde</button>` +
-      `<button class="knopf zwei breit" type="button" data-stufe>Stufe wechseln</button></div></div>`;
+    h += `<div class="knoepfe"><button class="knopf breit" type="button" data-neu>${U.neuText()}</button>` +
+      `<button class="knopf zwei breit" type="button" data-stufe>Stufe wechseln</button></div>` + U.mehrKnoepfe() + `</div>`;
     runde.taste = null;
     app.innerHTML = h;
     window.scrollTo(0, 0);

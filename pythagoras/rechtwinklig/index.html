@@ -182,7 +182,7 @@
     if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
       fehler.map(f => `<li>${f.k.zeige.map(zahl).join(" cm, ")} cm<br><span class="klein">Deine Wahl: ${f.ja ? "rechtwinklig" : "nicht rechtwinklig"}</span>` +
         `<div class="rechnung">${weg(f.k.z)}</div></li>`).join("") + "</ul>";
-    h += `<button class="knopf breit" type="button" data-neu>Neue Runde mit neuen Karten</button></div>`;
+    h += `<button class="knopf breit" type="button" data-neu>${U.neuText()}</button>` + U.mehrKnoepfe() + `</div>`;
     app.innerHTML = h;
     app.querySelector("[data-neu]").onclick = start;
   }

@@ -125,7 +125,7 @@
     h += U.haBox(TITEL, `${richtig} von ${ANZAHL}`, U.haStartZeit);
     if (fehler.length) h += `<p class="klein">Das schaust du dir noch einmal an:</p><ul class="liste">` +
       fehler.map(f => `<li>${f.frage}<br><span class="klein">Deine Antwort: ${f.gegeben} · richtig: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
-    h += `<button class="knopf breit" type="button" data-neu>Neue Runde</button></div>`;
+    h += `<button class="knopf breit" type="button" data-neu>${U.neuText()}</button>` + U.mehrKnoepfe() + `</div>`;
     ziel.innerHTML = h;
     ziel.querySelector("[data-neu]").onclick = start;
   }
