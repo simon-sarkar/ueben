@@ -278,7 +278,7 @@
     }
   };
   window.__test = { IP, TYPEN, familie, skizze, SERVER, cfg };
-  U.runde(cfg);
+  U.runde(Object.assign({ endlos: true }, cfg));
 })();
 </script>
 </body>

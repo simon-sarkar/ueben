@@ -124,7 +124,7 @@
     }
   };
   window.__test = { IP, cfg, plan: () => plan, planNeu };
-  U.runde(cfg);
+  U.runde(Object.assign({ endlos: true }, cfg));
 })();
 </script>
 </body>

@@ -62,7 +62,8 @@
     }
   ];
   const PLAN = [0, 2, 1, 3, 4, 5, 2, 4, 3, 4];     /* 10 Aufgaben, vom Leichten zum Schweren */
-  U.runde({ titel: "Teste dich", anzahl: PLAN.length, erzeuge: i => TYPEN[PLAN[i]]() });
+  U.runde({
+    endlos: true, titel: "Teste dich", anzahl: PLAN.length, erzeuge: i => TYPEN[PLAN[i]]() });
 })();
 </script>
 </body>

@@ -35,9 +35,9 @@
     if (neu) neu.click();
   }, true);
   /* Knöpfe unter „Wiederholen“: neue zufällige Aufgaben (nur wenn nicht schon frei) und zurück zur Auswahl */
-  U.mehrKnoepfe = sprache => {
+  U.mehrKnoepfe = (sprache, neuMoeglich = true) => {
     const L = U.TEXTE[sprache || "de"];
-    return `<div class="knoepfe-mehr">` + (U.frei ? "" : `<button class="knopf zwei breit" type="button" data-zufall-neu>${L.zufall}</button>`) +
+    return `<div class="knoepfe-mehr">` + (U.frei || !neuMoeglich ? "" : `<button class="knopf zwei breit" type="button" data-zufall-neu>${L.zufall}</button>`) +
       `<a class="knopf zwei breit" href="../">${L.zurueck}</a></div>`;
   };
   U.neuText = sprache => { const L = U.TEXTE[sprache || "de"]; return U.frei ? L.neuFrei : L.neu; };
@@ -255,7 +255,8 @@
       h += U.haBox(cfg.titel, `${fest.richtig} ${L.von} ${fest.anzahl}${zusatz}`, start, cfg.sprache);
       if (fehler.length) h += `<p class="klein">${L.nochmal}</p><ul class="liste">` +
         fehler.map(f => `<li>${f.frage}<br><span class="klein">${L.deine}: ${f.gegeben} · ${L.richtig}: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
-      h += `<button class="knopf breit" type="button" ${endlos ? "data-endlos-weiter" : "data-endlos"}>∞ ${endlos ? L.weiterEndlos : L.endlos}</button>` +
+      /* Endlos nur, wo die Übung wirklich neue Aufgaben erzeugt (cfg.endlos, z. B. Rechnen); feste Listen wie Vokabeln nicht */
+      h += (cfg.endlos ? `<button class="knopf breit" type="button" ${endlos ? "data-endlos-weiter" : "data-endlos"}>∞ ${endlos ? L.weiterEndlos : L.endlos}</button>` : "") +
         `<div class="knoepfe-mehr"><button class="knopf zwei breit" type="button" data-neu>${U.neuText(cfg.sprache)}</button>` +
         `<a class="knopf zwei breit" href="../">${L.zurueck}</a></div></div>`;
       ziel.innerHTML = h;
