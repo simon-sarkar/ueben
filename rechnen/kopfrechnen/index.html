@@ -63,7 +63,8 @@
 (function () {
   "use strict";
   const R = U.ganz, W = U.wahl, app = document.querySelector("#app");
-  const DAUER = 60;
+  const DAUER = 150;                 // Sekunden (2:30, Wunsch der Klasse 27.10.)
+  const uhr = s => Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
   const STUFEN = [
     { st: "★", was: "Plus und minus bis 100, Einmaleins" },
     { st: "★★", was: "Zahlenraum 1000, Zerlegen" },
@@ -167,9 +168,9 @@
   function start() {
     app.classList.remove("spielt");
     let h = `<div class="leiste"><h1>Kopfrechen-Sprint</h1></div><div class="karte">` +
-      `<p class="frage">Löse in 60 Sekunden so viele Aufgaben wie möglich.</p><div class="stufen">`;
+      `<p class="frage">Löse in ${uhr(DAUER)} Minuten so viele Aufgaben wie möglich.</p><div class="stufen">`;
     STUFEN.forEach((s, i) => {
-      const rek = U.rekord("kopfrechnen-" + (i + 1)).wert;
+      const rek = U.rekord("kopfrechnen-" + DAUER + "-" + (i + 1)).wert;
       h += `<button type="button" data-i="${i}" aria-pressed="${i === stufe}"><span class="st">${s.st}</span>` +
         `<span class="was">${s.was}<span class="rek">${rek ? "Rekord: " + rek : "noch kein Rekord"}</span></span></button>`;
     });
@@ -186,7 +187,7 @@
   let lauf = null;
   function spiel() {
     app.classList.add("spielt");
-    app.innerHTML = `<div class="spiel"><div class="status"><span class="zeit">60 s</span><span class="stufe">${STUFEN[stufe].st}</span>` +
+    app.innerHTML = `<div class="spiel"><div class="status"><span class="zeit">${uhr(DAUER)}</span><span class="stufe">${STUFEN[stufe].st}</span>` +
       `<span class="pkt">0 Punkte</span></div><div class="balken"><i style="width:100%"></i></div>` +
       `<div class="feld"><div class="term"></div><div class="antwort" aria-live="polite"></div><div class="korrektur"></div></div>` +
       `<div class="tasten">` +
@@ -243,7 +244,7 @@
     s.tick = setInterval(() => {
       const rest = DAUER - (performance.now() - s.t0) / 1000;
       if (rest <= 0) return ende(s);
-      zeitEl.textContent = Math.ceil(rest) + " s";
+      zeitEl.textContent = uhr(Math.ceil(rest));
       zeitEl.classList.toggle("knapp", rest <= 10);
       balken.style.width = (100 * rest / DAUER) + "%";
     }, 100);
@@ -264,7 +265,7 @@
   function ende(s) {
     s.aus = true; clearInterval(s.tick); lauf = null;
     app.classList.remove("spielt");
-    const r = U.rekord("kopfrechnen-" + (stufe + 1), s.punkte);
+    const r = U.rekord("kopfrechnen-" + DAUER + "-" + (stufe + 1), s.punkte);
     let h = `<div class="leiste"><h1>Kopfrechen-Sprint</h1></div><div class="karte ende"><div class="kopf">Zeit um · Stufe ${STUFEN[stufe].st}</div>` +
       `<div class="gross">${s.punkte} ${s.punkte === 1 ? "Punkt" : "Punkte"}</div>` +
       `<p class="zeile">${s.anzahl} ${s.anzahl === 1 ? "Aufgabe" : "Aufgaben"} beantwortet, ${s.fehler.length} falsch.</p>` +
