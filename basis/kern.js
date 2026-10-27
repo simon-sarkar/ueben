@@ -24,12 +24,13 @@
       if (e.target.closest && e.target.closest("[data-neu],[data-nochmal],[data-start],#nochmal")) U.zufallNeu();
     }, true);
   }
+  U.zufallFrei = () => { Math.random = NATIV; U.frei = true; };
   /* „Neue zufällige Aufgaben“: ab jetzt freier Zufall, dann den Wiederholen-Knopf der Seite auslösen */
   document.addEventListener("click", e => {
     const k = e.target.closest && e.target.closest("[data-zufall-neu]");
     if (!k) return;
     e.preventDefault(); e.stopPropagation();
-    Math.random = NATIV; U.frei = true;
+    U.zufallFrei();
     const neu = document.querySelector("[data-neu],[data-nochmal],#nochmal");
     if (neu) neu.click();
   }, true);
@@ -140,9 +141,9 @@
                einheit, weg (HTML: Rechenweg/Erklärung), spalten:2} */
   U.TEXTE = {
     de: { ok: ["Richtig.", "Stimmt.", "Genau.", "Gut gemacht."], falsch: "Nicht ganz.", pruefen: "Prüfen", weiter: "Weiter", zahl: "Zahl eingeben",
-          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Wiederholen", neuFrei: "Neue Runde", zufall: "Neue zufällige Aufgaben", zurueck: "Zurück zur Auswahl", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
+          fertig: "Geschafft", nochmal: "Das schaust du dir noch einmal an:", deine: "Deine Antwort", richtig: "richtig", neu: "Wiederholen", neuFrei: "Neue Runde", zufall: "Neue zufällige Aufgaben", zurueck: "Zurück zur Auswahl", endlos: "Endlos weiterüben", beenden: "Beenden", von: "von", ha: "Hausaufgabe", dauer: "Dauer" },
     en: { ok: ["Right.", "Correct.", "Well done.", "Yes."], falsch: "Not quite.", pruefen: "Check", weiter: "Next", zahl: "Type a number",
-          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "Try again", neuFrei: "New round", zufall: "New random tasks", zurueck: "Back to the list", von: "of", ha: "Homework", dauer: "time" }
+          fertig: "Done", nochmal: "Have another look at these:", deine: "Your answer", richtig: "correct", neu: "Try again", neuFrei: "New round", zufall: "New random tasks", zurueck: "Back to the list", endlos: "Keep practising", beenden: "Stop", von: "of", ha: "Homework", dauer: "time" }
   };
   /* Hausaufgaben-Nachweis: ?ha=Wort in der Adresse (vom QR-Code der Lehrkraft); erscheint nur auf dem Schlussbild
      mit Datum, Uhrzeit und Punkten, damit ein Screenshot als Abgabe taugt. Nur Buchstaben, Ziffern, Leerzeichen, - */
@@ -172,16 +173,22 @@
     const L = U.TEXTE[cfg.sprache || "de"];
     const ziel = cfg.ziel || document.querySelector("#app");
     let nr = 0, richtig = 0, fehler = [], keys = new Set(), aufg = null, start = Date.now();
-    const kopf = () => `<div class="leiste"><h1>${cfg.titel}</h1><span class="punkte">${richtig} / ${cfg.anzahl}</span></div>` +
-      `<div class="balken"><i style="width:${100 * nr / cfg.anzahl}%"></i></div>`;
+    /* Endlos-Modus nach der Runde: erst = Ergebnis der festen Runde (bleibt oben stehen), er/ea = Endlos richtig/beantwortet */
+    let endlos = false, erst = null, er = 0, ea = 0;
+    const stand = () => endlos ? `${erst.richtig}/${erst.anzahl} · ∞ ${er}/${ea}` : `${richtig} / ${cfg.anzahl}`;
+    const kopf = () => `<div class="leiste"><h1>${cfg.titel}</h1><span class="punkte">${stand()}</span>` +
+      (endlos ? `<button class="knopf zwei klein-knopf" type="button" data-beenden>${L.beenden}</button>` : "") + `</div>` +
+      (endlos ? "" : `<div class="balken"><i style="width:${100 * nr / cfg.anzahl}%"></i></div>`);
     function neu() {
       let t, n = 0;
-      do { t = cfg.erzeuge(nr, keys); n++; } while (t.key && keys.has(t.key) && n < 60);
+      const i = endlos ? nr % cfg.anzahl : nr;
+      if (endlos && i === 0 && nr > 0) keys = new Set();
+      do { t = cfg.erzeuge(i, keys); n++; } while (t.key && keys.has(t.key) && n < 60);
       if (t.key) keys.add(t.key);
       return t;
     }
     function zeige() {
-      if (nr >= cfg.anzahl) return ende();
+      if (!endlos && nr >= cfg.anzahl) return ende();
       aufg = neu();
       let h = kopf() + `<div class="karte"><div class="frage">${aufg.frage}</div>${aufg.bild || ""}`;
       if (aufg.typ === "wahl") h += `<div class="wahl${aufg.spalten === 2 ? " zwei-spalten" : ""}">` + aufg.optionen.map((o, i) => `<button type="button" data-i="${i}">${o}</button>`).join("") + "</div>";
@@ -189,6 +196,7 @@
       if (aufg.typ === "text") h += `<form class="eingabe" autocomplete="off"><input class="textfeld" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Antwort" placeholder="${aufg.hinweis || ""}" style="width:100%"><button class="knopf" type="submit">${L.pruefen}</button></form>`;
       h += `<div class="rueck versteckt"></div><div class="unten versteckt"><button class="knopf" type="button" data-weiter>${L.weiter}</button></div></div>`;
       ziel.innerHTML = h;
+      const b = ziel.querySelector("[data-beenden]"); if (b) b.onclick = () => { ende(); window.scrollTo(0, 0); };
       const karte = ziel.querySelector(".karte");
       if (aufg.typ === "wahl") karte.querySelectorAll(".wahl button").forEach(b => b.onclick = () => {
         const i = Number(b.dataset.i), ok = i === aufg.richtig;
@@ -226,26 +234,36 @@
       }));
       function werte(ok, gegeben) {
         karte.dataset.fertig = "1";
-        if (ok) richtig++; else fehler.push({ frage: aufg.kurz || aufg.frage, gegeben, loesung: aufg.loesungText || (aufg.typ === "wahl" ? aufg.optionen[aufg.richtig] : aufg.typ === "zahl" ? U.de(aufg.loesung) + (aufg.einheit ? " " + aufg.einheit : "") : aufg.typ === "text" ? [].concat(aufg.loesung)[0] : aufg.richtig) });
+        if (endlos) { ea++; if (ok) er++; } else if (ok) richtig++;
+        if (!ok && !endlos) fehler.push({ frage: aufg.kurz || aufg.frage, gegeben, loesung: aufg.loesungText || (aufg.typ === "wahl" ? aufg.optionen[aufg.richtig] : aufg.typ === "zahl" ? U.de(aufg.loesung) + (aufg.einheit ? " " + aufg.einheit : "") : aufg.typ === "text" ? [].concat(aufg.loesung)[0] : aufg.richtig) });
         const r = karte.querySelector(".rueck"); r.classList.remove("versteckt"); r.classList.add(ok ? "ok" : "falsch");
         r.innerHTML = (ok ? U.wahl(L.ok) : L.falsch) + (aufg.weg ? `<div class="weg">${aufg.weg}</div>` : "");
-        ziel.querySelector(".punkte").textContent = `${richtig} / ${cfg.anzahl}`;
+        ziel.querySelector(".punkte").textContent = stand();
         const u = karte.querySelector(".unten"); u.classList.remove("versteckt");
         const w = u.querySelector("[data-weiter]"); w.focus({ preventScroll: true }); w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };
         if (r.getBoundingClientRect().bottom > innerHeight) u.scrollIntoView({ behavior: "smooth", block: "end" });
       }
     }
     function ende() {
-      const q = richtig / cfg.anzahl, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
+      const fest = erst || { richtig, anzahl: cfg.anzahl };
+      const q = fest.richtig / fest.anzahl, st = q >= 0.9 ? 3 : q >= 0.7 ? 2 : q >= 0.4 ? 1 : 0;
+      const zusatz = endlos ? ` · ∞ ${er} ${L.von} ${ea}` : "";
       let h = `<div class="leiste"><h1>${cfg.titel}</h1></div><div class="karte ende"><div class="kopf">${L.fertig}</div>` +
-        `<div class="gross">${richtig} ${L.von} ${cfg.anzahl}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
-        [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>";
-      h += U.haBox(cfg.titel, `${richtig} ${L.von} ${cfg.anzahl}`, start, cfg.sprache);
+        `<div class="gross">${fest.richtig} ${L.von} ${fest.anzahl}</div><div class="sterne" aria-label="${st} von 3 Sternen">` +
+        [0, 1, 2].map(i => `<span class="${i < st ? "" : "aus"}">★</span>`).join("") + "</div>" +
+        (endlos ? `<p class="zeile"><b>∞ ${er} ${L.von} ${ea}</b></p>` : "");
+      h += U.haBox(cfg.titel, `${fest.richtig} ${L.von} ${fest.anzahl}${zusatz}`, start, cfg.sprache);
       if (fehler.length) h += `<p class="klein">${L.nochmal}</p><ul class="liste">` +
         fehler.map(f => `<li>${f.frage}<br><span class="klein">${L.deine}: ${f.gegeben} · ${L.richtig}: <b>${f.loesung}</b></span></li>`).join("") + "</ul>";
-      h += `<button class="knopf breit" type="button" data-neu>${U.neuText(cfg.sprache)}</button>` + U.mehrKnoepfe(cfg.sprache) + "</div>";
+      h += (endlos ? "" : `<button class="knopf breit" type="button" data-endlos>∞ ${L.endlos}</button>`) +
+        `<div class="knoepfe-mehr"><button class="knopf zwei breit" type="button" data-neu>${U.neuText(cfg.sprache)}</button>` +
+        `<a class="knopf zwei breit" href="../">${L.zurueck}</a></div></div>`;
       ziel.innerHTML = h;
-      ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); start = Date.now(); zeige(); window.scrollTo(0, 0); };
+      ziel.querySelector("[data-neu]").onclick = () => { nr = 0; richtig = 0; fehler = []; keys = new Set(); start = Date.now();
+        endlos = false; erst = null; zeige(); window.scrollTo(0, 0); };
+      const e = ziel.querySelector("[data-endlos]");
+      if (e) e.onclick = () => { U.zufallFrei(); erst = { richtig, anzahl: cfg.anzahl }; endlos = true; er = 0; ea = 0;
+        nr = 0; keys = new Set(); zeige(); window.scrollTo(0, 0); };
     }
     zeige();
   };

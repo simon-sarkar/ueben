@@ -12,5 +12,7 @@ Leerzeichen und Bindestrich, höchstens 24 Zeichen.
 ## Gleiche Aufgaben für alle
 
 Standardmäßig bekommen alle dieselben Aufgaben: Der Zufall hat einen festen Startwert aus der Adresse der Übung (und
-dem Wort aus `?ha=`). Am Ende stehen drei Knöpfe: „Wiederholen“ (dieselben Aufgaben), „Neue zufällige Aufgaben“ (ab dann endlos neue)
-und „Zurück zur Auswahl“. Mit `?zufall=1` gibt es von Anfang an bei jeder Runde neue Aufgaben. Die Spiele (Blasen, Paketpost) und der Kopfrechen-Sprint (Warm-up-Ritual) würfeln immer frei.
+dem Wort aus `?ha=`). Am Ende stehen drei Knöpfe: „∞ Endlos weiterüben“ (neue Zufallsaufgaben, oben bleibt das Ergebnis der festen Runde
+stehen, daneben ∞ richtig/beantwortet, z. B. „8/10 · ∞ 18/20“; „Beenden“ zeigt beides und den Nachweis), „Wiederholen“
+(dieselben Aufgaben) und „Zurück zur Auswahl“. Übungen mit eigenem Aufbau (Wischen, Bausteine, Dreieck antippen,
+schriftlich) haben statt Endlos „Neue zufällige Aufgaben“. Mit `?zufall=1` gibt es von Anfang an bei jeder Runde neue Aufgaben. Die Spiele (Blasen, Paketpost) und der Kopfrechen-Sprint (Warm-up-Ritual) würfeln immer frei.

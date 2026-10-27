@@ -92,3 +92,5 @@ sup { font-size: .7em; line-height: 0; }
 
 .knoepfe-mehr { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
 .knoepfe-mehr a.knopf { text-align: center; text-decoration: none; }
+.leiste .klein-knopf { padding: 6px 12px; min-height: 0; font-size: .85em; margin-left: 8px; }
+.ende .zeile { margin: 4px 0; }
