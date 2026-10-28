@@ -20,7 +20,8 @@ privat/öffentlich), haben „Neue zufällige Aufgaben“. Mit `?zufall=1` gibt 
 
 ## Designs
 
-`?design=` an der Adresse wählt das Aussehen: `wellig` (Standard), `tinte`, `salbei`, `lagune`, `pflaume`, `nacht`.
+`?design=` an der Adresse wählt das Aussehen: `wellig` (Standard), `tinte`, `salbei`, `lagune`, `pflaume`, `nacht`, `verspielt`, `magazin`.
+`magazin` und `verspielt` kommen aus den Familien der Kursmühle. Ein Design in der Adresse ersetzt das fest eingestellte der Seite ganz (auch Rand und Farbe), etwa `…/rechnen/einmaleins/?design=magazin`. `?kasten=wellig|sehr-wellig` zieht den Rand der Karten in der Akzentfarbe nach.
 `?farbe=2b5a8f` setzt eine eigene Farbe für Knöpfe, Nummern und Fortschritt. Beides geht auch fest in einer Seite
 (`<html data-design="tinte" data-farbe="#2b5a8f">`).
 

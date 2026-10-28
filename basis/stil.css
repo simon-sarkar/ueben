@@ -163,6 +163,28 @@ sup { font-size: .7em; line-height: 0; }
 [data-design="verspielt"] .nr { transform: rotate(-6deg); box-shadow: 2px 2px 0 var(--ink); }
 [data-design="verspielt"] .kk-seite { border-style: dashed; border-color: var(--ink); box-shadow: 4px 4px 0 var(--tint); }
 
+/* ---------- Design „magazin“ (Kursmühle-Familie Magazin: große Titel, feine Linien, eckig, Schwarz mit Rot) ---------- */
+@font-face { font-family: "Bebas Neue"; src: url("bebasneue.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+[data-design="magazin"] { --ink: #17171A; --muted: #6A6F7A; --line: #D8DAE0; --bg: #fff; --card: #fff; --hue: #111111;
+  --akzent: #C8102E; --tint: #F1F1F3; --kopf: "Bebas Neue", "Arial Narrow", Arial, sans-serif; }
+[data-design="magazin"] h1, [data-design="magazin"] h2, [data-design="magazin"] .kopf, [data-design="magazin"] .punkte,
+[data-design="magazin"] .knopf, [data-design="magazin"] .nr, [data-design="magazin"] .ende .gross,
+[data-design="magazin"] .kk-vorne, [data-design="magazin"] .kk-hinten, [data-design="magazin"] .kk-f b { font-weight: 400; letter-spacing: .04em; }
+[data-design="magazin"] .leiste { border-bottom: 3px solid var(--akzent); padding-bottom: 6px; }
+[data-design="magazin"] .leiste h1 { font-size: 1.7em; }
+[data-design="magazin"] .punkte { font-size: 1.4em; }
+[data-design="magazin"] .karte { border: 0; border-top: 3px solid var(--ink); border-radius: 0; padding: 16px 2px; }
+[data-design="magazin"] .knopf { border-radius: 0; font-size: 1.25em; }
+[data-design="magazin"] .nr, [data-design="magazin"] .balken, [data-design="magazin"] .balken > i { border-radius: 0; }
+[data-design="magazin"] .wahl button, [data-design="magazin"] .eingabe input, [data-design="magazin"] .kk-auswahl button,
+[data-design="magazin"] .kk-modus button, [data-design="magazin"] .kk-f, [data-design="magazin"] .rueck,
+[data-design="magazin"] .ha-nachweis { border-radius: 0; }
+[data-design="magazin"] .kk-seite { border: 2px solid var(--ink); border-radius: 0; box-shadow: 6px 6px 0 var(--akzent); }
+[data-design="magazin"] .kk-vorne { font-size: clamp(48px, 15vw, 72px); color: var(--ink); }
+[data-design="magazin"] .kk-hinten { font-size: clamp(40px, 12vw, 60px); }
+[data-design="magazin"] .kk-auswahl button[aria-pressed="true"], [data-design="magazin"] .kk-modus button[aria-pressed="true"] {
+  background: var(--ink); color: #fff; border-color: var(--ink); }
+
 /* ---------- Rand ?kasten=wellig|sehr-wellig (kern.js zeichnet --welle in der Akzentfarbe) ---------- */
 [data-kasten] .karte, [data-kasten] .kasten, [data-kasten] .kk-seite { border: 2px solid var(--hue);
   border-image: var(--welle) 12 / 10px stretch; border-radius: 6px; box-shadow: none; }

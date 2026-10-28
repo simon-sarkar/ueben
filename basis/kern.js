@@ -14,7 +14,7 @@
      bleiben beim Standard „wellig“. ?kasten=wellig|sehr-wellig zieht den Rand der Karten in der Akzentfarbe nach.
      ?farbe=RRGGBB setzt die Akzentfarbe; Text und Knöpfe bekommen eine Fassung mit mindestens 4,5:1 zum Untergrund
      (wie die Kursmühle), Flächen wie Fortschritt und Sterne die Farbe selbst. */
-  U.DESIGNS = ["wellig", "tinte", "salbei", "lagune", "pflaume", "nacht", "verspielt"];
+  U.DESIGNS = ["wellig", "tinte", "salbei", "lagune", "pflaume", "nacht", "verspielt", "magazin"];
   const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
   const lum = c => { const l = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
     return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
@@ -32,9 +32,11 @@
   U.welle = (art, farbe) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="${WELLE[art][0]}" fill="none" stroke="${farbe}" stroke-width="${WELLE[art][1]}" stroke-linejoin="round" stroke-linecap="round"/></svg>`)}")`;
   { const H = document.documentElement, d = PARAM.get("design") || H.dataset.design;
     if (d && d !== "wellig" && U.DESIGNS.includes(d)) H.dataset.design = d; else delete H.dataset.design;
-    const ka = PARAM.get("kasten") || H.dataset.kasten;
+    /* ein Design in der Adresse ersetzt das der Seite ganz: Rand und Farbe der Seite gelten dann nicht */
+    const ausAdresse = PARAM.has("design");
+    const ka = PARAM.get("kasten") || (ausAdresse ? "" : H.dataset.kasten);
     if (WELLE[ka]) H.dataset.kasten = ka; else delete H.dataset.kasten;
-    const f = (PARAM.get("farbe") || H.dataset.farbe || "").replace("#", "");
+    const f = (PARAM.get("farbe") || (ausAdresse ? "" : H.dataset.farbe) || "").replace("#", "");
     const cs = getComputedStyle(H), wert = n => cs.getPropertyValue(n).trim();
     let hue = wert("--hue");
     if (/^[0-9a-fA-F]{6}$/.test(f)) {
