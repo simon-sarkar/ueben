@@ -23,3 +23,11 @@ privat/öffentlich), haben „Neue zufällige Aufgaben“. Mit `?zufall=1` gibt 
 `?design=` an der Adresse wählt das Aussehen: `wellig` (Standard), `tinte`, `salbei`, `lagune`, `pflaume`, `nacht`.
 `?farbe=2b5a8f` setzt eine eigene Farbe für Knöpfe, Nummern und Fortschritt. Beides geht auch fest in einer Seite
 (`<html data-design="tinte" data-farbe="#2b5a8f">`).
+
+## Lernkartei
+
+`basis/kartei.js` macht aus einer Kartenliste eine Lernkartei: Karte umdrehen und „Wusste ich“ oder „Wusste ich nicht“
+antippen, oder die Antwort tippen (`?modus=tippen`). Nicht gewusste Karten kommen nach drei anderen wieder und landen in
+Fach 1; gewusste rücken ein Fach weiter und kommen seltener. Eine Runde hat 20 Karten. Der Stand bleibt im Browser des
+Geräts und lässt sich am Ende zurücksetzen. Die Kartei würfelt frei, weil sich die Reihenfolge nach dem richtet, was das
+Kind nicht weiß. Beim Einmaleins wählt `?reihen=3,7` die Reihen vor.

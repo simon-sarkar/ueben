@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Einmaleins-Kartei</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+</head>
+<body data-zufall="frei">
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script src="../../basis/kartei.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* kleines Einmaleins bis 10 · 10; eine Reihe r umfasst a · r und r · a. Auswahl auch per Adresse: ?reihen=3,4,7 */
+  const R = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+  U.kartei({
+    id: "einmaleins", titel: "Einmaleins-Kartei", sprache: "de", runde: 20,
+    auswahl: { titel: "Welche Reihen?", param: "reihen", standard: R, optionen: R.map(r => ({ wert: r, text: r + "er" })) },
+    karten(auswahl) {
+      const K = [];
+      for (const a of R) for (const b of R) if (auswahl.has(String(a)) || auswahl.has(String(b)))
+        K.push({ id: a + "x" + b, vorne: `${a} · ${b}`, hinten: `<span>${a} · ${b} = ${a * b}</span>`, kurz: String(a * b),
+          antworten: [a * b], eingabe: "zahl" });
+      return K;
+    }
+  });
+})();
+</script>
+</body>
+</html>

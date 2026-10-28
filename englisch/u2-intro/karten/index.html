@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Flashcards: Exploring India</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+</head>
+<body data-zufall="frei">
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../../../basis/kartei.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* je Wort zwei Karten: Englisch → Deutsch und Deutsch → Englisch; l = zusätzlich erlaubte Antworten beim Tippen */
+  const W = [
+    { en: "slum", de: "Slum, Elendsviertel", satz: "Millions of poor people live in slums." },
+    { en: "Indian", de: "Inder, Inderin, indisch", satz: "Most Indians speak English." },
+    { en: "to lead, led, led", de: "anführen, führen, leiten", satz: "A president leads a country.", l: ["to lead", "lead"] },
+    { en: "protest", de: "Protest, Demonstration", satz: "There were protests against the British." },
+    { en: "the British", de: "die Briten", satz: "There were protests against the British.", l: ["British"] },
+    { en: "independent", de: "unabhängig", satz: "India is an independent country now." },
+    { en: "environmental", de: "Umwelt-", satz: "Plastic in the sea is an environmental problem." },
+    { en: "pollution", de: "Verschmutzung", satz: "There are problems with pollution." },
+    { en: "waste", de: "Abfall", satz: "waste = rubbish" },
+    { en: "arranged marriage", de: "arrangierte Hochzeit", satz: "There are many arranged marriages in India." },
+    { en: "wedding", de: "Hochzeit", satz: "There was a big party after the wedding." },
+    { en: "several", de: "mehrere, einige, verschiedene", satz: "several = three or more, but not many" }
+  ];
+  const teile = s => [s].concat(s.split(", "));
+  const K = [];
+  W.forEach(w => {
+    K.push({ id: "e:" + w.en, vorne: w.en, hinten: `<span lang="de">${w.de}</span><i>${w.satz}</i>`, kurz: `<span lang="de">${w.de}</span>`,
+      antworten: teile(w.de), eingabe: "text" });
+    K.push({ id: "d:" + w.en, vorne: `<span lang="de">${w.de}</span>`, hinten: `<span>${w.en}</span><i>${w.satz}</i>`, kurz: w.en,
+      antworten: [w.en].concat(w.l || []), eingabe: "text" });
+  });
+  U.kartei({ id: "u2-intro", titel: "Flashcards: Exploring India", sprache: "en", runde: 20, karten: () => K });
+})();
+</script>
+</body>
+</html>
