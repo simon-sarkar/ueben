@@ -10,14 +10,41 @@
      denselben Aufgaben. Mit ?zufall=1 bleibt der Zufall frei (endlos neue Aufgaben). Spiele setzen
      <body data-zufall="frei">. */
   const PARAM = (() => { try { return new URLSearchParams(location.search); } catch (e) { return new URLSearchParams(); } })();
-  /* Design aus der Adresse (?design=tinte); unbekannte Namen bleiben beim Standard */
-  U.DESIGNS = ["wellig", "tinte", "salbei", "lagune", "pflaume", "nacht"];
-  { const d = PARAM.get("design") || document.documentElement.dataset.design;
-    if (d && d !== "wellig" && U.DESIGNS.includes(d)) document.documentElement.dataset.design = d;
-    else delete document.documentElement.dataset.design;
-    /* eigene Farbe: ?farbe=2b5a8f oder <html data-farbe="#2b5a8f">; Knöpfe, Nummern, Punkte, Fortschritt */
-    const f = (PARAM.get("farbe") || document.documentElement.dataset.farbe || "").replace("#", "");
-    if (/^[0-9a-fA-F]{6}$/.test(f)) { const r = document.documentElement.style; r.setProperty("--hue", "#" + f); r.setProperty("--akzent", "#" + f); } }
+  /* Design aus der Adresse (?design=tinte) oder fest in der Seite (<html data-design="nacht">); unbekannte Namen
+     bleiben beim Standard „wellig“. ?kasten=wellig|sehr-wellig zieht den Rand der Karten in der Akzentfarbe nach.
+     ?farbe=RRGGBB setzt die Akzentfarbe; Text und Knöpfe bekommen eine Fassung mit mindestens 4,5:1 zum Untergrund
+     (wie die Kursmühle), Flächen wie Fortschritt und Sterne die Farbe selbst. */
+  U.DESIGNS = ["wellig", "tinte", "salbei", "lagune", "pflaume", "nacht", "verspielt"];
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lum = c => { const l = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+    return 0.2126 * l[0] + 0.7152 * l[1] + 0.0722 * l[2]; };
+  const kontrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+  const hex = c => "#" + c.map(v => Math.round(v).toString(16).padStart(2, "0")).join("");
+  U.lesbar = (farbe, grund) => {
+    let c = rgb(farbe); const g = rgb(grund), dunkel = lum(g) < 0.3, ziel = dunkel ? 255 : 0;
+    for (let i = 0; i < 60 && (kontrast(c, g) < 4.5 || (!dunkel && kontrast(c, [255, 255, 255]) < 4.5)); i++) c = c.map(v => v + (ziel - v) * 0.05);
+    return hex(c);
+  };
+  const WELLE = {
+    "wellig": ["M6 6.6C30 4.8 64 7.9 94 5.8C95.5 32 93.3 66 94.3 94.1C66 95.6 32 93.1 5.9 94.3C4.5 66 6.9 34 6 6.6Z", 2.4],
+    "sehr-wellig": ["M18 4.5C23.82 4.5 28.18 11.5 34 11.5S44.18 4.5 50 4.5S60.18 11.5 66 11.5S76.18 4.5 82 4.5C89.46 4.5 95.5 10.54 95.5 18C95.5 23.82 88.5 28.18 88.5 34S95.5 44.18 95.5 50S88.5 60.18 88.5 66S95.5 76.18 95.5 82C95.5 89.46 89.46 95.5 82 95.5C76.18 95.5 71.82 88.5 66 88.5S55.82 95.5 50 95.5S39.82 88.5 34 88.5S23.82 95.5 18 95.5C10.54 95.5 4.5 89.46 4.5 82C4.5 76.18 11.5 71.82 11.5 66S4.5 55.82 4.5 50S11.5 39.82 11.5 34S4.5 23.82 4.5 18C4.5 10.54 10.54 4.5 18 4.5Z", 2.6]
+  };
+  U.welle = (art, farbe) => `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="${WELLE[art][0]}" fill="none" stroke="${farbe}" stroke-width="${WELLE[art][1]}" stroke-linejoin="round" stroke-linecap="round"/></svg>`)}")`;
+  { const H = document.documentElement, d = PARAM.get("design") || H.dataset.design;
+    if (d && d !== "wellig" && U.DESIGNS.includes(d)) H.dataset.design = d; else delete H.dataset.design;
+    const ka = PARAM.get("kasten") || H.dataset.kasten;
+    if (WELLE[ka]) H.dataset.kasten = ka; else delete H.dataset.kasten;
+    const f = (PARAM.get("farbe") || H.dataset.farbe || "").replace("#", "");
+    const cs = getComputedStyle(H), wert = n => cs.getPropertyValue(n).trim();
+    let hue = wert("--hue");
+    if (/^[0-9a-fA-F]{6}$/.test(f)) {
+      const bg = /^#[0-9a-fA-F]{6}$/.test(wert("--bg")) ? wert("--bg") : "#ffffff", g = rgb(bg);
+      hue = U.lesbar("#" + f, bg);
+      H.style.setProperty("--hue", hue); H.style.setProperty("--akzent", "#" + f);
+      H.style.setProperty("--tint", hex(rgb("#" + f).map((v, i) => g[i] + (v - g[i]) * 0.16)));
+    }
+    if (/^#[0-9a-fA-F]{6}$/.test(hue) && (H.dataset.kasten || !H.dataset.design))
+      H.style.setProperty("--welle", U.welle(H.dataset.kasten || "wellig", hue)); }
   U.frei = PARAM.get("zufall") === "1" || (document.body && document.body.dataset.zufall === "frei");
   const fnv = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
   const START = fnv(location.pathname.replace(/index\.html$/, "") + "|" + (PARAM.get("ha") || ""));

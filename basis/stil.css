@@ -151,3 +151,20 @@ sup { font-size: .7em; line-height: 0; }
 .kk-eingabe { justify-content: center; }
 .kk-eingabe input { flex: 1; min-width: 0; }
 .kk-reset { display: block; margin: 18px auto 0; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: .85em; }
+
+/* ---------- Design „verspielt“ (Kursmühle-Familie Verspielt: Handschrift-Titel, Sticker, gestrichelte Karten) ---------- */
+@font-face { font-family: "Kalam"; src: url("kalam.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+[data-design="verspielt"] { --ink: #22223B; --muted: #54556B; --line: #D9D6E8; --bg: #FFFBF2; --card: #fff; --hue: #7C3AED;
+  --akzent: #7C3AED; --tint: #EEE7FD; --kopf: "Kalam", "Segoe Print", "Chalkboard SE", "Comic Sans MS", cursive; }
+[data-design="verspielt"] h1, [data-design="verspielt"] h2, [data-design="verspielt"] .kopf { font-weight: 700; }
+[data-design="verspielt"] .karte { border: 2px dashed var(--ink); border-radius: 14px; }
+[data-design="verspielt"] .knopf { box-shadow: 3px 3px 0 var(--ink); border-radius: 12px; font-weight: 700; }
+[data-design="verspielt"] .knopf.zwei { box-shadow: inset 0 0 0 2px var(--hue), 3px 3px 0 var(--ink); }
+[data-design="verspielt"] .nr { transform: rotate(-6deg); box-shadow: 2px 2px 0 var(--ink); }
+[data-design="verspielt"] .kk-seite { border-style: dashed; border-color: var(--ink); box-shadow: 4px 4px 0 var(--tint); }
+
+/* ---------- Rand ?kasten=wellig|sehr-wellig (kern.js zeichnet --welle in der Akzentfarbe) ---------- */
+[data-kasten] .karte, [data-kasten] .kasten, [data-kasten] .kk-seite { border: 2px solid var(--hue);
+  border-image: var(--welle) 12 / 10px stretch; border-radius: 6px; box-shadow: none; }
+[data-kasten="sehr-wellig"] .karte, [data-kasten="sehr-wellig"] .kasten, [data-kasten="sehr-wellig"] .kk-seite {
+  border-image: var(--welle) 18 / 14px round; padding: 24px 24px; }
