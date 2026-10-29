@@ -32,3 +32,6 @@ antippen, oder die Antwort tippen (`?modus=tippen`). Nicht gewusste Karten komme
 Fach 1; gewusste rücken ein Fach weiter und kommen seltener. Eine Runde hat 20 Karten. Der Stand bleibt im Browser des
 Geräts und lässt sich am Ende zurücksetzen. Die Kartei würfelt frei, weil sich die Reihenfolge nach dem richtet, was das
 Kind nicht weiß. Beim Einmaleins wählt `?reihen=3,7` die Reihen vor.
+
+## Keine Browser-Übersetzung
+Jede Seite trägt `<html translate="no" …>` und `<meta name="google" content="notranslate">` (gleich nach `charset`). Grund: Chrome auf Schülerhandys übersetzte die englischen Seiten automatisch ins Deutsche und machte dabei aus den Falschschreibungen `protestt` und `prodest` jeweils „Protest“ – drei gleiche Antworten, eine davon „falsch“. Neue Seiten bekommen beides. Übersetzt ein Browser trotzdem, zeigt `basis/kern.js` oben einen roten Hinweis.

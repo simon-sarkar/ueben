@@ -308,5 +308,19 @@
     zeige();
   };
 
+  /* ---------- Keine Browser-Übersetzung ----------
+     Alle Seiten tragen translate="no" + <meta name="google" content="notranslate">. Übersetzt ein Browser trotzdem
+     (Chrome setzt dann die Klasse translated-ltr/-rtl an <html>), würde er Falschschreibungen „korrigieren“ und
+     Lösungen verraten (29.10.2026: protestt/prodest wurden zu „Protest“). Dann ein Hinweis oben auf der Seite. */
+  const UEBERSETZT_HINWEIS = () => {
+    if (!/\btranslated-(ltr|rtl)\b/.test(document.documentElement.className) || document.getElementById("u-uebersetzt") || !document.body) return;
+    const d = document.createElement("div");
+    d.id = "u-uebersetzt"; d.setAttribute("translate", "no"); d.setAttribute("role", "alert");
+    d.textContent = "Bitte die Übersetzung im Browser ausschalten (Originalseite anzeigen) – sonst stimmen die Aufgaben nicht.";
+    d.style.cssText = "position:fixed;left:0;right:0;top:0;z-index:9999;padding:12px 16px;background:#b00020;color:#fff;font:600 16px/1.35 system-ui,sans-serif;text-align:center";
+    document.body.appendChild(d);
+  };
+  try { new MutationObserver(UEBERSETZT_HINWEIS).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] }); } catch (e) {}
+
   window.U = U;
 })();
