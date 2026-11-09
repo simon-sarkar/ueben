@@ -1,0 +1,147 @@
+<!doctype html>
+<html translate="no" lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Teste dich: Anonym im Netz?</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .paar { font-family: var(--kopf); font-weight: 600; background: var(--bg); border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; }
+  .paar div { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .paar span { color: var(--muted); font-weight: 400; font-family: var(--grund); }
+  .zitat { background: var(--bg); border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  const g = U.ganz;
+  /* Adressen wie im Unterricht: privat 192.168.x.y, öffentlich ausgedacht (erste Zahl aus einer festen Liste).
+     Die Huber-Adressen von den Folien kommen hier nicht vor. */
+  const ERSTE = [31, 37, 46, 62, 77, 78, 79, 80, 87, 88, 89, 93, 94, 95, 141, 145, 151, 176, 178, 185, 188, 193, 194, 195, 212, 213, 217];
+  const GER = { Laptop: "der Laptop", Handy: "das Handy", Konsole: "die Konsole", Tablet: "das Tablet", Fernseher: "der Fernseher" };
+  const SERVER = "142.250.185.78";
+  function netz() {
+    const n = `192.168.${U.wahl([g(3, 60), 178, 0, 1])}`;
+    const ger = U.wahl(Object.keys(GER));
+    return { ger, art: GER[ger], innen: n + ".1", ip: `${n}.${g(20, 99)}`,
+      aussen: `${U.wahl(ERSTE)}.${g(1, 254)}.${g(0, 255)}.${g(2, 254)}` };
+  }
+  const gross = s => s[0].toUpperCase() + s.slice(1);
+  const paar = zeilen => `<div class="paar">${zeilen.map(([a, b]) => `<div><span>${a}</span>${b}</div>`).join("")}</div>`;
+  const bild = f => paar([[gross(f.art), f.ip], ["Router innen", f.innen], ["Router außen", f.aussen], ["YouTube-Server", SERVER]]);
+  /* Auswahlaufgabe: richtige Antwort + falsche, gemischt (die richtige steht nicht immer an derselben Stelle) */
+  function wahl(key, frage, richtig, falsch, weg, extra) {
+    const opt = U.mische([richtig].concat(falsch));
+    return Object.assign({ key, typ: "wahl", frage, optionen: opt, richtig: opt.indexOf(richtig), weg }, extra || {});
+  }
+
+  const TYPEN = {
+    absenderDraussen() {
+      const f = netz();
+      return wahl("absenderDraussen", `${gross(f.art)} schickt eine Anfrage an YouTube. Welche Absenderadresse steht auf dem Paket, wenn es beim YouTube-Server ankommt?`,
+        f.aussen, [f.ip, f.innen, SERVER], `Der Router ersetzt die private Absenderadresse durch seine öffentliche: ${f.aussen}.`, { bild: bild(f), spalten: 2 });
+    },
+    absenderDrinnen() {
+      const f = netz();
+      return wahl("absenderDrinnen", `${gross(f.art)} schickt eine Anfrage an YouTube. Welche Absenderadresse steht auf dem Paket, bevor es beim Router ankommt?`,
+        f.ip, [f.aussen, f.innen, SERVER], `Im LAN trägt das Paket noch die private Adresse des Geräts: ${f.ip}.`, { bild: bild(f), spalten: 2 });
+    },
+    antwortAn() {
+      const f = netz();
+      return wahl("antwortAn", `Der YouTube-Server antwortet auf die Anfrage. An welche Adresse schickt er die Antwort?`,
+        f.aussen, [f.ip, f.innen, SERVER], `Der Server kennt nur die öffentliche Adresse des Routers: ${f.aussen}. Der Router stellt die Antwort dann im LAN zu.`, { bild: bild(f), spalten: 2 });
+    },
+    merkliste() {
+      return wahl("merkliste", "Die Antwort vom Server kommt beim Router an. Woher weiß der Router, welches Gerät sie bekommt?",
+        "Er hat sich gemerkt, welches Gerät gefragt hat.",
+        ["Der Server schreibt die private Adresse auf die Antwort.", "Der Internetanbieter sagt es ihm.", "Er schickt die Antwort an alle Geräte."],
+        "Der Router führt eine Liste: Welches Gerät hat welche Anfrage geschickt?");
+    },
+    nat() {
+      return wahl("nat", "Der Router tauscht die private gegen die öffentliche Adresse. Wie heißt das?",
+        "NAT", ["LAN", "WLAN", "IPv6"], "NAT heißt Adressübersetzung.", { spalten: 2 });
+    },
+    lan() {
+      return wahl("lan", "Was ist ein LAN?",
+        "ein lokales Netz",
+        ["das ganze Internet", "die öffentliche Adresse des Routers", "ein anderes Wort für Internetanbieter"],
+        "LAN = lokales Netz. Der Router verbindet es mit dem Internet.");
+    },
+    wieViele() {
+      const n = g(3, 6);
+      return wahl("wieViele", `In einem Heimnetz schauen ${n} Geräte gleichzeitig YouTube. Wie viele verschiedene Absenderadressen sieht der YouTube-Server?`,
+        "1", [String(n), String(n + 1), "0"], "Alle Geräte gehen über denselben Router nach draußen. Der Server sieht nur die öffentliche Adresse des Routers.", { spalten: 2 });
+    },
+    serverSpeichert() {
+      return wahl("serverSpeichert", "Du rufst ohne Anmeldung eine Webseite auf. Was kann der Server dabei speichern?",
+        "die öffentliche Adresse und die Uhrzeit",
+        ["deinen Namen und deine Wohnadresse", "die private Adresse deines Handys", "gar nichts"],
+        "Der Server sieht die öffentliche Adresse des Routers, die Uhrzeit und was aufgerufen wurde.");
+    },
+    anbieterWeiss() {
+      return wahl("anbieterWeiss", "Wer weiß, welcher Anschluss um 23:41 Uhr eine bestimmte öffentliche Adresse hatte?",
+        "der Internetanbieter", ["der YouTube-Server", "jeder, der die Adresse kennt", "niemand"],
+        "Der Anbieter vergibt die öffentlichen Adressen. Er weiß, wann welcher Anschluss welche hatte.", { spalten: 2 });
+    },
+    polizei() {
+      return wahl("polizei", "Unter falschem Namen wurde jemand beleidigt. Die Plattform kennt nur die öffentliche Adresse und die Uhrzeit. Wo fragt die Polizei als Nächstes nach?",
+        "beim Internetanbieter", ["bei allen Nachbarn", "beim Hersteller des Handys", "nirgends, das geht nicht"],
+        "Der Anbieter kann sagen, zu welchem Anschluss die Adresse zu dieser Uhrzeit gehörte.");
+    },
+    wohin() {
+      return wahl("wohin", "Die Polizei kennt jetzt die öffentliche Adresse und die Uhrzeit. Wohin führt diese Spur zuerst?",
+        "zum Anschluss, also meist zu den Eltern", ["direkt zu der Person, die getippt hat", "direkt zu dem Handy", "zu YouTube"],
+        "Die Adresse gehört zum Anschluss, nicht zu einer Person. Wer es war, klärt sich erst dort.");
+    },
+    inkognito() {
+      return wahl("inkognito", "Du surfst im Inkognito-Tab. Was ändert sich?",
+        "Auf deinem Gerät wird kein Verlauf gespeichert.",
+        ["Der Server sieht keine Adresse mehr.", "Der Internetanbieter sieht nichts mehr.", "Du bekommst eine neue öffentliche Adresse."],
+        "Inkognito wirkt nur auf deinem eigenen Gerät. Server und Anbieter sehen dich wie immer.");
+    },
+    wechsel() {
+      return wahl("wechsel", "Die öffentliche Adresse eures Routers wechselt regelmäßig. Bist du dadurch anonym?",
+        "Nein, der Anbieter weiß, wann ihr welche hattet.",
+        ["Ja, die alte Adresse gehört dann niemandem mehr.", "Ja, der Server sieht dann eine andere Adresse.", "Nein, weil die Adresse in Wahrheit nie wechselt."],
+        "Entscheidend ist die Uhrzeit: Der Anbieter weiß, welcher Anschluss wann welche Adresse hatte.");
+    },
+    drohung() {
+      return wahl("drohung", "Stimmt das?",
+        "Nein. Fremde sehen höchstens Anbieter und ungefähre Gegend.",
+        ["Ja. Aus der Adresse kann jeder die Wohnadresse ablesen.", "Nein. Über die Adresse lässt sich gar nichts herausfinden.", "Ja. Man kann sie nachschlagen und sieht die Hausnummer."],
+        "Welcher Anschluss dahintersteckt, weiß nur der Internetanbieter.",
+        { bild: `<div class="zitat">Jemand schreibt im Chat: „Ich hab deine IP. Ich weiß, wo du wohnst.“</div>`, kurz: "„Ich hab deine IP. Ich weiß, wo du wohnst.“ Stimmt das?" });
+    },
+    konto() {
+      return wahl("konto", "Du bist bei YouTube angemeldet und schreibst einen Kommentar. Woran erkennt dich YouTube auch ohne die IP-Adresse?",
+        "an deinem Konto", ["an der Marke deines Handys", "an deiner privaten Adresse", "gar nicht"],
+        "Wer angemeldet ist, ist für die Plattform ohnehin erkennbar.", { spalten: 2 });
+    },
+    verbindet() {
+      return wahl("verbindet", "Welches Gerät verbindet das LAN mit dem Internet?",
+        "der Router", ["der Switch", "der Access Point", "das Handy"], "Der Router hat innen eine private und außen eine öffentliche Adresse.", { spalten: 2 });
+    }
+  };
+
+  let plan = [], letzteI = -1;
+  const cfg = {
+    titel: "Teste dich: Anonym im Netz?",
+    anzahl: 10,
+    erzeuge(i) {
+      if (i === 0 && letzteI !== 0) plan = U.mische(Object.keys(TYPEN));
+      letzteI = i;
+      const a = TYPEN[plan[i]](); a.art = plan[i]; return a;
+    }
+  };
+  window.__test = { TYPEN, cfg };
+  U.runde(cfg);
+})();
+</script>
+</body>
+</html>
