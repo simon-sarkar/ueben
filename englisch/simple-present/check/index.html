@@ -75,7 +75,7 @@
   ],
     ["He ___ fish.", "not / like", ["doesn’t like", "does not like"]
   ],
-    ["We ___ a dog.", "not / have", ["don’t have", "do not have"]
+    ["We ___ a dog.", "not / have", ["don’t have", "do not have", "haven’t got", "have not got"]
   ],
     ["The bus ___ at seven o’clock every morning.", "leave", ["leaves"]
   ],
@@ -104,7 +104,7 @@
   }
   function schreib(a) {
     return { key: "w" + a[0], typ: "text",
-      frage: `<span class="anw">Write the right form.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)} <span class="verb">(${U.esc(a[1])})</span></span>`,
+      frage: `<span class="anw">Write the simple present.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)} <span class="verb">(${U.esc(a[1])})</span></span>`,
       hinweis: "", loesung: a[2], weg: voll(a[0], a[2][0]), kurz: `${U.esc(a[0]).replace("___", "____________")} (${U.esc(a[1])})`, loesungText: a[2][0] };
   }
 

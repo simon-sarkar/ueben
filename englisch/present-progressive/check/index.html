@@ -75,13 +75,13 @@
   ],
     ["Look! The boys ___ across the playground.", "run", ["are running"]
   ],
-    ["She ___ at the moment.", "not / work", ["is not working", "isn’t working"]
+    ["She ___ at the moment.", "not / work", ["is not working", "isn’t working", "’s not working"]
   ],
     ["We ___ lunch right now.", "have", ["are having"]
   ],
     ["Look! My brother ___ his bike.", "ride", ["is riding"]
   ],
-    ["They ___ outside right now.", "not / play", ["are not playing", "aren’t playing"]
+    ["They ___ outside right now.", "not / play", ["are not playing", "aren’t playing", "’re not playing"]
   ],
     ["Listen! The phone ___.", "ring", ["is ringing"]
   ],
@@ -104,7 +104,7 @@
   }
   function schreib(a) {
     return { key: "w" + a[0], typ: "text",
-      frage: `<span class="anw">Write the right form.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)} <span class="verb">(${U.esc(a[1])})</span></span>`,
+      frage: `<span class="anw">Write the present progressive.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)} <span class="verb">(${U.esc(a[1])})</span></span>`,
       hinweis: "", loesung: a[2], weg: voll(a[0], a[2][0]), kurz: `${U.esc(a[0]).replace("___", "____________")} (${U.esc(a[1])})`, loesungText: a[2][0] };
   }
 
