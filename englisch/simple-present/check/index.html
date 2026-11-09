@@ -60,7 +60,7 @@
   ]];
   /* Welcher Satz stimmt? Der erste ist richtig. */
   const SATZ = [
-    ["My sister doesn’t like dogs.", "My sister don’t like dogs.", "My sister doesn’t likes dogs."],
+    ["My sister doesn’t play chess.", "My sister don’t play chess.", "My sister doesn’t plays chess."],
     ["Do they play tennis?", "Does they play tennis?", "Do they plays tennis?"],
     ["He comes home at four.", "He come home at four.", "He is come home at four."],
     ["What do you want?", "What you want?", "What does you want?"],
@@ -69,25 +69,25 @@
   ];
   /* Schreiben: Satz mit ___, Verb in Klammern, erlaubte Lösungen (erste = Anzeige) */
   const SCHREIB = [
-    ["Mia ___ basketball.", "play", ["plays"]
+    ["Mia ___ basketball every Tuesday.", "play", ["plays"]
   ],
-    ["My parents ___ in a hospital.", "work", ["work"]
+    ["My parents ___ in a hospital. They are nurses.", "work", ["work"]
   ],
     ["He ___ fish.", "not / like", ["doesn’t like", "does not like"]
   ],
     ["We ___ a dog.", "not / have", ["don’t have", "do not have"]
   ],
-    ["The bus ___ at seven o’clock.", "leave", ["leaves"]
+    ["The bus ___ at seven o’clock every morning.", "leave", ["leaves"]
   ],
-    ["She ___ to bed at ten.", "go", ["goes"]
+    ["She usually ___ to bed at ten.", "go", ["goes"]
   ],
     ["Tim ___ the news every evening.", "watch", ["watches"]
   ],
     ["My grandma ___ in Turkey.", "live", ["lives"]
   ],
-    ["I ___ my bike to school.", "ride", ["ride"]
+    ["I always ___ my bike to school.", "ride", ["ride"]
   ],
-    ["It ___ a lot in England.", "rain", ["rains"]
+    ["It often ___ in England.", "rain", ["rains"]
   ]];
   const LUECKE = `<span class="luecke" aria-label="gap">____________</span>`;
   const voll = (s, l) => U.esc(s).replace("___", `<b>${U.esc(l)}</b>`);
