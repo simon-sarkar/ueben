@@ -1,0 +1,129 @@
+<!doctype html>
+<html translate="no" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Check: simple present</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .satz { display: block; font-size: 1.1em; line-height: 1.7; }
+  .luecke { font-family: var(--kopf); color: var(--hue); letter-spacing: -1px; white-space: nowrap; }
+  .verb { color: var(--muted); white-space: nowrap; }
+  .eingabe input.textfeld { flex: 1 1 100%; }
+  .eingabe .knopf { flex: 1 1 auto; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Simple present: Aussage (he/she/it + s), Verneinung mit don’t/doesn’t, Fragen mit do/does.
+     15 Aufgaben zum Antippen (10 Form wählen, 5 richtiger Satz) + 5 zum Schreiben. Sätze selbst geschrieben. */
+  /* Form wählen: Satz mit ___, richtige Form, falsche Formen */
+  const FORM = [
+    ["My sister ___ with animals.", "works", ["work", "working"]
+  ],
+    ["They ___ football every Saturday.", "play", ["plays", "playing"]
+  ],
+    ["He ___ like cold weather.", "doesn’t", ["don’t", "isn’t"]
+  ],
+    ["___ you live near the school?", "Do", ["Does", "Are"]
+  ],
+    ["___ your brother like maths?", "Does", ["Do", "Is"]
+  ],
+    ["We ___ wear a uniform at school.", "don’t", ["doesn’t", "aren’t"]
+  ],
+    ["Anna ___ her teeth after breakfast.", "brushes", ["brush", "brushs"]
+  ],
+    ["My aunt ___ to the gym after work.", "goes", ["go", "gos"]
+  ],
+    ["Tom ___ hard for every test.", "studies", ["study", "studys"]
+  ],
+    ["She ___ two brothers.", "has", ["have", "haves"]
+  ],
+    ["Where ___ she work?", "does", ["do", "is"]
+  ],
+    ["What time ___ the lesson start?", "does", ["do", "is"]
+  ],
+    ["My friends ___ computer games.", "love", ["loves", "loving"]
+  ],
+    ["Our teacher ___ us a lot of homework.", "gives", ["give", "giving"]
+  ],
+    ["Ben doesn’t ___ milk.", "drink", ["drinks", "drinking"]
+  ],
+    ["Does she ___ the bus to school?", "take", ["takes", "taking"]
+  ]];
+  /* Welcher Satz stimmt? Der erste ist richtig. */
+  const SATZ = [
+    ["My sister doesn’t like dogs.", "My sister don’t like dogs.", "My sister doesn’t likes dogs."],
+    ["Do they play tennis?", "Does they play tennis?", "Do they plays tennis?"],
+    ["He comes home at four.", "He come home at four.", "He is come home at four."],
+    ["What do you want?", "What you want?", "What does you want?"],
+    ["Our neighbour sells cars.", "Our neighbour sell cars.", "Our neighbour selling cars."],
+    ["I don’t know the answer.", "I doesn’t know the answer.", "I not know the answer."]
+  ];
+  /* Schreiben: Satz mit ___, Verb in Klammern, erlaubte Lösungen (erste = Anzeige) */
+  const SCHREIB = [
+    ["Mia ___ basketball.", "play", ["plays"]
+  ],
+    ["My parents ___ in a hospital.", "work", ["work"]
+  ],
+    ["He ___ fish.", "not / like", ["doesn’t like", "does not like"]
+  ],
+    ["We ___ a dog.", "not / have", ["don’t have", "do not have"]
+  ],
+    ["The bus ___ at seven o’clock.", "leave", ["leaves"]
+  ],
+    ["She ___ to bed at ten.", "go", ["goes"]
+  ],
+    ["Tim ___ the news every evening.", "watch", ["watches"]
+  ],
+    ["My grandma ___ in Turkey.", "live", ["lives"]
+  ],
+    ["I ___ my bike to school.", "ride", ["ride"]
+  ],
+    ["It ___ a lot in England.", "rain", ["rains"]
+  ]];
+  const LUECKE = `<span class="luecke" aria-label="gap">____________</span>`;
+  const voll = (s, l) => U.esc(s).replace("___", `<b>${U.esc(l)}</b>`);
+
+  function form(a) {
+    const opt = U.mische([a[1]].concat(a[2]));
+    return { key: "f" + a[0], typ: "wahl", frage: `<span class="anw">Choose the right form.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)}</span>`,
+      optionen: opt.map(U.esc), richtig: opt.indexOf(a[1]), spalten: opt.every(o => o.length < 14) ? 2 : 1, weg: voll(a[0], a[1]), kurz: U.esc(a[0]).replace("___", "____________") };
+  }
+  function satz(a) {
+    const opt = U.mische(a);
+    return { key: "s" + a[0], typ: "wahl", frage: `<span class="anw">Which sentence is correct?</span>`,
+      optionen: opt.map(U.esc), richtig: opt.indexOf(a[0]), weg: `<b>${U.esc(a[0])}</b>`, kurz: "Which sentence is correct?" };
+  }
+  function schreib(a) {
+    return { key: "w" + a[0], typ: "text",
+      frage: `<span class="anw">Write the right form.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)} <span class="verb">(${U.esc(a[1])})</span></span>`,
+      hinweis: "", loesung: a[2], weg: voll(a[0], a[2][0]), kurz: `${U.esc(a[0]).replace("___", "____________")} (${U.esc(a[1])})`, loesungText: a[2][0] };
+  }
+
+  let plan = [], gestartet = false;
+  function neueRunde() {
+    plan = U.mische([].concat(U.mische(FORM).slice(0, 10).map(form), U.mische(SATZ).slice(0, 5).map(satz), U.mische(SCHREIB).slice(0, 5).map(schreib)));
+  }
+  window.__test = { FORM, SATZ, SCHREIB, form, satz, schreib };
+  U.runde({
+    titel: "Simple present",
+    anzahl: 20,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0 && (gestartet || !plan.length)) neueRunde();
+      gestartet = true;
+      return plan[i];
+    }
+  });
+})();
+</script>
+</body>
+</html>

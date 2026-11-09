@@ -1,0 +1,122 @@
+<!doctype html>
+<html translate="no" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Vocabulary check: Working in India</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .wort { display: block; font-family: var(--kopf); font-weight: 600; font-size: 1.5em; color: var(--hue); margin: 4px 0 2px; }
+  .de { display: block; font-family: var(--kopf); font-weight: 600; font-size: 1.25em; color: var(--hue); margin-bottom: 6px; }
+  .de small { display: block; font-family: var(--grund); font-weight: 400; font-size: .68em; color: var(--muted); }
+  .satz { display: block; line-height: 1.7; }
+  .luecke { font-family: var(--kopf); color: var(--hue); letter-spacing: -1px; white-space: nowrap; }
+  .stufe { display: inline-block; font-size: .75em; color: var(--muted); margin-bottom: 4px; }
+  .weg i { color: var(--muted); }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Vocabulary check (Abschluss der Stunde): 15 Aufgaben zum Antippen + 5 zum Schreiben, leicht und schwer gemischt.
+     leicht: Englisch -> Deutsch, Deutsch -> Englisch; schwer: Wort in den Satz, richtige Schreibweise; schreiben: Wort in den Satz.
+     Beispielsätze selbst geschrieben. */
+  const W = [
+    { en: "computer programmer", de: "Programmierer, Programmiererin", ab: [["settler", "Siedler, Siedlerin"], ["patient", "Patient, Patientin"], ["speaker", "Sprecher, Sprecherin"], ["Indian", "Inder, Inderin"]],
+      s: "My cousin is a ___. She builds websites and games on her laptop.", sa: ["tour guide", "prince", "patient"], f: ["computer programer", "computer programmor", "computer progammer"] },
+    { en: "IT (Information Technology)", form: "IT", de: "Informatik, Informationstechnik", ab: [["medicine", "Medizin"], ["energy", "Energie"], ["pollution", "Verschmutzung"], ["competition", "Wettbewerb"]],
+      s: "Tom is good with computers, so he wants a job in ___.", sa: ["medicine", "pollution", "competition"], f: null },
+    { en: "to solve", form: "solve", de: "lösen", ab: [["to break", "brechen, zerbrechen"], ["to hurt", "verletzen, wehtun"], ["to begin", "beginnen, anfangen"], ["to lead", "anführen, führen, leiten"]],
+      s: "Who can ___ this puzzle first?", sa: ["enjoy", "hurt", "recover"], f: ["to solv", "to sollve", "to solfe"] },
+    { en: "to enjoy", form: "enjoy", de: "mögen, genießen, Gefallen finden an", ab: [["to recover", "sich erholen"], ["to begin", "beginnen, anfangen"], ["to hurt", "verletzen, wehtun"], ["to lead", "anführen, führen, leiten"]],
+      s: "We always ___ our holidays by the sea.", sa: ["solve", "hurt", "lead"], f: ["to enjoi", "to injoy", "to enyoy"] },
+    { en: "tour guide", de: "Reiseleiter, Reiseleiterin", ab: [["settler", "Siedler, Siedlerin"], ["speaker", "Sprecher, Sprecherin"], ["patient", "Patient, Patientin"], ["Australian", "Australier, Australierin"]],
+      s: "Our ___ works for a travel company and shows tourists around the city.", sa: ["settler", "patient", "computer programmer"], f: ["tour giude", "tur guide", "tour gide"] },
+    { en: "prince", de: "Prinz", ab: [["settler", "Siedler"], ["speaker", "Sprecher"], ["patient", "Patient"], ["Indian", "Inder"]],
+      s: "The son of a king is a ___.", sa: ["settler", "speaker", "tour guide"], f: ["prinz", "prinse", "prins"] },
+    { en: "assembly line", de: "Fließband", ab: [["medical record", "Krankenakte"], ["oil spill", "Ölteppich"], ["climate change", "Klimawandel"], ["official language", "Amtssprache"]],
+      s: "Hundreds of workers stand at the ___ and put the phones together.", sa: ["office", "oil spill", "medical record"], f: ["asembly line", "assembly lyne", "assemby line"] },
+    { en: "to make", form: "make", de: "herstellen", ab: [["to break", "brechen, zerbrechen"], ["to begin", "beginnen, anfangen"], ["to lead", "anführen, führen, leiten"], ["to hurt", "verletzen, wehtun"]],
+      s: "Many factories in India ___ clothes for shops in Europe.", sa: ["solve", "hurt", "lead"], f: null },
+    { en: "goods", de: "Waren, Güter", ab: [["waste", "Abfall"], ["list", "Liste"], ["danger", "Gefahr"], ["task", "Aufgabe, Auftrag"]],
+      s: "This shop sells ___ from all over the world.", sa: ["danger", "pollution", "waste"], f: ["goodes", "gouds", "goodz"] },
+    { en: "machine", de: "Maschine, Automat", ab: [["medicine", "Medizin"], ["rock", "Fels, Stein"], ["coral", "Koralle"], ["list", "Liste"]],
+      s: "You put the coins into the ___ and get a drink.", sa: ["office", "medicine", "list"], f: ["maschine", "machin", "mashine"] },
+    { en: "true", de: "wahr, richtig", ab: [["confident", "selbstbewusst"], ["surprised", "überrascht"], ["independent", "unabhängig"], ["disappointed", "enttäuscht"]],
+      s: "Is it ___ that your cousin lives in London?", sa: ["virtual", "colourful", "surprised"], f: ["tru", "treu", "trew"] },
+    { en: "virtual", de: "virtuell", ab: [["independent", "unabhängig"], ["colourful", "bunt"], ["confident", "selbstbewusst"], ["environmental", "Umwelt-"]],
+      s: "In this game you build a ___ city on your screen.", sa: ["surprised", "disappointed", "confident"], f: ["virtuel", "virtuall", "wirtual"] },
+    { en: "office", de: "Büro", ab: [["pharmacy", "Apotheke"], ["department", "Abteilung"], ["slum", "Slum, Elendsviertel"], ["appointment", "Termin"]],
+      s: "My dad sits at a desk in his ___ all day.", sa: ["slum", "appointment", "assembly line"], f: ["ofice", "offis", "offise"] }
+  ];
+  const form = w => w.form || w.en;
+  const LUECKE = `<span class="luecke" aria-label="gap">____________</span>`;
+  const muster = w => w.split(" ").map(t => t[0] + " _".repeat(t.length - 1)).join("   ");
+  const leicht = `<span class="stufe">★</span>`, schwer = `<span class="stufe">★★</span>`;
+
+  /* leicht: Englisch -> Deutsch */
+  function enDe(w) {
+    const opt = U.mische([[w.en, w.de]].concat(U.mische(w.ab).slice(0, 3)));
+    return { key: "e" + w.en, typ: "wahl", frage: `${leicht}<span class="anw">Choose the German word.</span><span class="wort">${w.en}</span>`,
+      optionen: opt.map(o => o[1]), richtig: opt.findIndex(o => o[0] === w.en), weg: `<b>${w.en}</b> – ${w.de}`, kurz: w.en };
+  }
+  /* leicht: Deutsch -> Englisch */
+  function deEn(w) {
+    const opt = U.mische([[w.en, w.de]].concat(U.mische(w.ab).slice(0, 3)));
+    return { key: "d" + w.en, typ: "wahl", frage: `${leicht}<span class="anw">Choose the English word.</span><span class="wort" lang="de">${w.de}</span>`,
+      optionen: opt.map(o => o[0]), richtig: opt.findIndex(o => o[0] === w.en), weg: `<b>${w.en}</b> – ${w.de}`, kurz: `<span lang="de">${w.de}</span>` };
+  }
+  /* schwer: welches Wort passt in den Satz (sa = feste Ablenker je Satz, damit nie ein zweites Wort passt) */
+  function satz(w) {
+    const opt = U.mische([form(w)].concat(w.sa));
+    return { key: "s" + w.en, typ: "wahl", frage: `${schwer}<span class="anw">Which word fits?</span><span class="satz">${U.esc(w.s).replace("___", LUECKE)}</span>`,
+      optionen: opt, richtig: opt.indexOf(form(w)), spalten: 2, weg: U.esc(w.s).replace("___", `<b>${form(w)}</b>`),
+      kurz: U.esc(w.s).replace("___", "____________") };
+  }
+  /* schwer: richtige Schreibweise */
+  function schreibweise(w) {
+    const opt = U.mische([w.en].concat(w.f));
+    return { key: "r" + w.en, typ: "wahl", frage: `${schwer}<span class="anw">Which spelling is correct?</span><span class="wort" lang="de">${w.de}</span>`,
+      optionen: opt, richtig: opt.indexOf(w.en), spalten: 2, weg: `<b>${w.en}</b>`, kurz: `<span lang="de">${w.de}</span>` };
+  }
+  /* schreiben: Wort in den Satz, Anfangsbuchstabe als Hilfe */
+  function schreiben(w) {
+    const l = form(w), zwei = l.includes(" ");
+    return { key: "w" + w.en, typ: "text",
+      frage: `${schwer}<span class="anw">Write the English word.</span><span class="de" lang="de">${w.de}${zwei ? `<small lang="en">two words</small>` : ""}</span>` +
+        `<span class="satz">${U.esc(w.s).replace("___", LUECKE)}</span>`,
+      hinweis: muster(l), loesung: [l],
+      weg: U.esc(w.s).replace("___", `<b>${l}</b>`), kurz: `<span lang="de">${w.de}</span>: ${U.esc(w.s).replace("___", "____________")}` };
+  }
+
+  /* Runde: 4 enDe + 4 deEn + 4 satz + 3 schreibweise + 5 schreiben = 20; ein Wort nie zweimal in derselben Art,
+     schwere Arten (satz, schreibweise, schreiben) je Wort höchstens einmal */
+  let plan = [], gestartet = false;
+  function neueRunde() {
+    const a = U.mische(W), b = U.mische(W);
+    const sw = U.mische(W.filter(w => w.f)).slice(0, 3), rest = U.mische(W.filter(w => sw.indexOf(w) < 0));
+    const auf = [].concat(a.slice(0, 4).map(enDe), b.slice(0, 4).map(deEn),
+      sw.map(schreibweise), rest.slice(0, 4).map(satz), rest.slice(4, 9).map(schreiben));
+    plan = U.mische(auf);
+  }
+
+  U.runde({
+    titel: "Vocabulary check",
+    anzahl: 20,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0 && (gestartet || !plan.length)) neueRunde();
+      gestartet = true;
+      return plan[i];
+    }
+  });
+})();
+</script>
+</body>
+</html>

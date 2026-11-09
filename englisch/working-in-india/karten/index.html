@@ -1,0 +1,46 @@
+<!doctype html>
+<html translate="no" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Flashcards: Working in India</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+</head>
+<body data-zufall="frei">
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../../../basis/kartei.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* je Wort zwei Karten: Englisch → Deutsch und Deutsch → Englisch; l = zusätzlich erlaubte Antworten beim Tippen */
+  const W = [
+    { en: "computer programmer", de: "Programmierer, Programmiererin", satz: "Computer programmers often work from home." },
+    { en: "IT (Information Technology)", de: "Informatik, Informationstechnik", satz: "She works in IT.", l: ["IT", "Information Technology"] },
+    { en: "to solve", de: "lösen", satz: "to solve a crossword", l: ["solve"] },
+    { en: "to enjoy", de: "mögen, genießen, Gefallen finden an", satz: "I enjoy reading.", l: ["enjoy"] },
+    { en: "tour guide", de: "Reiseleiter, Reiseleiterin", satz: "The tour guide knew every street in Delhi." },
+    { en: "prince", de: "Prinz", satz: "a prince and a princess" },
+    { en: "assembly line", de: "Fließband", satz: "to work on an assembly line" },
+    { en: "to make", de: "herstellen", satz: "This factory makes shoes.", l: ["make"] },
+    { en: "goods", de: "Waren, Güter", satz: "goods from the factory" },
+    { en: "machine", de: "Maschine, Automat", satz: "a ticket machine" },
+    { en: "true", de: "wahr, richtig", satz: "true ≠ false" },
+    { en: "virtual", de: "virtuell", satz: "a virtual classroom on the internet" },
+    { en: "office", de: "Büro", satz: "The office is on the third floor." }
+  ];
+  const teile = s => [s].concat(s.split(", "));
+  const K = [];
+  W.forEach(w => {
+    K.push({ id: "e:" + w.en, vorne: w.en, hinten: `<span lang="de">${w.de}</span><i>${w.satz}</i>`, kurz: `<span lang="de">${w.de}</span>`,
+      antworten: teile(w.de), eingabe: "text" });
+    K.push({ id: "d:" + w.en, vorne: `<span lang="de">${w.de}</span>`, hinten: `<span>${w.en}</span><i>${w.satz}</i>`, kurz: w.en,
+      antworten: [w.en].concat(w.l || []), eingabe: "text" });
+  });
+  U.kartei({ id: "working-in-india", titel: "Flashcards: Working in India", sprache: "en", runde: 20, karten: () => K });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html translate="no" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>What’s wrong?</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .satz { display: block; font-size: 1.1em; line-height: 1.6; }
+  .eingabe input.textfeld { flex: 1 1 100%; }
+  .eingabe input.textfeld::placeholder { color: #9A8F80; }
+  .eingabe .knopf { flex: 1 1 auto; }
+  .weg s { color: var(--bad); }
+  .weg b { color: var(--ok); }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* f = falsch geschriebenes Wort im Satz, r = richtige Schreibweise(n), erste = Anzeige; je Runde jedes Wort höchstens einmal */
+  const AUFG = [
+    { w: "computer programmer", s: "My aunt is a computer programer for a big company.", f: "programer", r: ["programmer", "computer programmer"] },
+    { w: "tour guide", s: "Our tour giude spoke English and German.", f: "giude", r: ["guide", "tour guide"] },
+    { w: "assembly line", s: "She has a job on the asembly line at a chocolate factory.", f: "asembly", r: ["assembly", "assembly line"] },
+    { w: "assembly line", s: "The assembly lyne stopped for an hour.", f: "lyne", r: ["line", "assembly line"] },
+    { w: "enjoy", s: "Do you enjoi cooking?", f: "enjoi", r: ["enjoy"] },
+    { w: "enjoy", s: "My grandparents endschoy their garden.", f: "endschoy", r: ["enjoy"] },
+    { w: "machine", s: "The washing maschine is very loud.", f: "maschine", r: ["machine"] },
+    { w: "office", s: "She goes to the ofice by bus.", f: "ofice", r: ["office"] },
+    { w: "virtual", s: "We visited the museum on a virtuel tour.", f: "virtuel", r: ["virtual"] },
+    { w: "prince", s: "The prinz lived in a big castle.", f: "prinz", r: ["prince"] },
+    { w: "solve", s: "The police want to solv the case.", f: "solv", r: ["solve"] },
+    { w: "goods", s: "The lorry is full of goodes for the supermarket.", f: "goodes", r: ["goods"] },
+    { w: "true", s: "The story sounds strange, but it is tru.", f: "tru", r: ["true"] }
+  ];
+  let reihe = [], gestartet = false;
+  function neueRunde() {
+    const woerter = U.mische([...new Set(AUFG.map(a => a.w))]).slice(0, 10);
+    reihe = woerter.map(w => U.wahl(AUFG.filter(a => a.w === w)));
+  }
+
+  U.runde({
+    titel: "What’s wrong?",
+    anzahl: 10,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0) { if (gestartet || !reihe.length) neueRunde(); gestartet = true; }
+      const a = reihe[i];
+      return {
+        key: a.s, typ: "text",
+        frage: `<span class="anw">One word is wrong. Write it correctly.</span><span class="satz">${U.esc(a.s)}</span>`,
+        hinweis: "correct word", loesung: a.r,
+        weg: `<s>${a.f}</s> → <b>${a.r[0]}</b><br>${U.esc(a.s).replace(a.f, `<b>${a.r[0]}</b>`)}`,
+        kurz: U.esc(a.s), loesungText: a.r[0]
+      };
+    }
+  });
+})();
+</script>
+</body>
+</html>

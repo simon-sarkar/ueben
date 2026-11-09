@@ -1,0 +1,129 @@
+<!doctype html>
+<html translate="no" lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Check: present progressive</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>
+  .anw { display: block; font-size: .85em; color: var(--muted); margin-bottom: 6px; }
+  .satz { display: block; font-size: 1.1em; line-height: 1.7; }
+  .luecke { font-family: var(--kopf); color: var(--hue); letter-spacing: -1px; white-space: nowrap; }
+  .verb { color: var(--muted); white-space: nowrap; }
+  .eingabe input.textfeld { flex: 1 1 100%; }
+  .eingabe .knopf { flex: 1 1 auto; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Present progressive: am/is/are + Verb + ing, Verneinung, Fragen, Schreibung der ing-Form.
+     15 Aufgaben zum Antippen (10 Form wählen, 5 richtiger Satz) + 5 zum Schreiben. Sätze selbst geschrieben. */
+  /* Form wählen: Satz mit ___, richtige Form, falsche Formen */
+  const FORM = [
+    ["Look! A man ___ on the roof.", "is standing", ["are standing", "am standing"]
+  ],
+    ["I ___ my room right now.", "am cleaning", ["is cleaning", "are cleaning"]
+  ],
+    ["We ___ for the train.", "are waiting", ["is waiting", "am waiting"]
+  ],
+    ["My friends ___ basketball at the moment.", "are playing", ["is playing", "am playing"]
+  ],
+    ["She ___ a magazine.", "is reading", ["are reading", "am reading"]
+  ],
+    ["They ___ not listening.", "are", ["is", "am"]
+  ],
+    ["___ you watching this video?", "Are", ["Is", "Am"]
+  ],
+    ["What ___ she eating?", "is", ["are", "am"]
+  ],
+    ["Listen! The birds ___.", "are singing", ["are sing", "singing"]
+  ],
+    ["He ___ a letter.", "is writing", ["is writeing", "is writting"]
+  ],
+    ["My cousins ___ in the sea.", "are swimming", ["are swiming", "is swimming"]
+  ],
+    ["I ___ not crying.", "am", ["is", "are"]
+  ],
+    ["Grandpa ___ a salad right now.", "is making", ["is makeing", "are making"]
+  ],
+    ["Why ___ they laughing?", "are", ["is", "am"]
+  ],
+    ["Tom and I ___ a film.", "are watching", ["am watching", "is watching"]
+  ],
+    ["She is ___ on the beach.", "lying", ["lieing", "lyeing"]
+  ]];
+  /* Welcher Satz stimmt? Der erste ist richtig. */
+  const SATZ = [
+    ["He is smiling.", "He smiling.", "He is smile."],
+    ["Are you working?", "Do you working?", "Is you working?"],
+    ["Tom isn’t listening.", "Tom doesn’t listening.", "Tom not is listening."],
+    ["Who are you calling?", "Who you are calling?", "Who do you calling?"],
+    ["She is shopping in town.", "She is shoping in town.", "She shopping in town."],
+    ["I’m not joking.", "I amn’t joking.", "I not joking."]
+  ];
+  /* Schreiben: Satz mit ___, Verb in Klammern, erlaubte Lösungen (erste = Anzeige) */
+  const SCHREIB = [
+    ["Look! It ___.", "snow", ["is snowing"]
+  ],
+    ["I ___ a comic at the moment.", "read", ["am reading"]
+  ],
+    ["The boys ___ across the playground.", "run", ["are running"]
+  ],
+    ["She ___ today.", "not / work", ["is not working", "isn’t working"]
+  ],
+    ["We ___ lunch right now.", "have", ["are having"]
+  ],
+    ["My brother ___ his bike.", "ride", ["is riding"]
+  ],
+    ["They ___ outside.", "not / play", ["are not playing", "aren’t playing"]
+  ],
+    ["Listen! The phone ___.", "ring", ["is ringing"]
+  ],
+    ["My sister ___ a picture.", "take", ["is taking"]
+  ],
+    ["I ___.", "not / sleep", ["am not sleeping", "’m not sleeping"]
+  ]];
+  const LUECKE = `<span class="luecke" aria-label="gap">____________</span>`;
+  const voll = (s, l) => U.esc(s).replace("___", `<b>${U.esc(l)}</b>`);
+
+  function form(a) {
+    const opt = U.mische([a[1]].concat(a[2]));
+    return { key: "f" + a[0], typ: "wahl", frage: `<span class="anw">Choose the right form.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)}</span>`,
+      optionen: opt.map(U.esc), richtig: opt.indexOf(a[1]), spalten: opt.every(o => o.length < 14) ? 2 : 1, weg: voll(a[0], a[1]), kurz: U.esc(a[0]).replace("___", "____________") };
+  }
+  function satz(a) {
+    const opt = U.mische(a);
+    return { key: "s" + a[0], typ: "wahl", frage: `<span class="anw">Which sentence is correct?</span>`,
+      optionen: opt.map(U.esc), richtig: opt.indexOf(a[0]), weg: `<b>${U.esc(a[0])}</b>`, kurz: "Which sentence is correct?" };
+  }
+  function schreib(a) {
+    return { key: "w" + a[0], typ: "text",
+      frage: `<span class="anw">Write the right form.</span><span class="satz">${U.esc(a[0]).replace("___", LUECKE)} <span class="verb">(${U.esc(a[1])})</span></span>`,
+      hinweis: "", loesung: a[2], weg: voll(a[0], a[2][0]), kurz: `${U.esc(a[0]).replace("___", "____________")} (${U.esc(a[1])})`, loesungText: a[2][0] };
+  }
+
+  let plan = [], gestartet = false;
+  function neueRunde() {
+    plan = U.mische([].concat(U.mische(FORM).slice(0, 10).map(form), U.mische(SATZ).slice(0, 5).map(satz), U.mische(SCHREIB).slice(0, 5).map(schreib)));
+  }
+  window.__test = { FORM, SATZ, SCHREIB, form, satz, schreib };
+  U.runde({
+    titel: "Present progressive",
+    anzahl: 20,
+    sprache: "en",
+    erzeuge(i) {
+      if (i === 0 && (gestartet || !plan.length)) neueRunde();
+      gestartet = true;
+      return plan[i];
+    }
+  });
+})();
+</script>
+</body>
+</html>
