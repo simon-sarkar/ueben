@@ -1,0 +1,105 @@
+<!doctype html>
+<html translate="no" lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Stimmt das?</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  .zitat { background: var(--bg); border-radius: 12px; padding: 10px 14px; margin: 0 0 12px; font-weight: 600; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Zehn feste Aufgaben zum Prüfen von Videos. Die Beispiele sind ausgedacht und kommen auf den Folien nicht vor. */
+  function wahl(key, frage, richtig, falsch, weg, zitat) {
+    const opt = U.mische([richtig].concat(falsch));
+    const a = { key, typ: "wahl", frage, optionen: opt, richtig: opt.indexOf(richtig), weg };
+    if (zitat) { a.bild = `<div class="zitat">${zitat}</div>`; a.kurz = `${zitat} ${frage}`; }
+    return a;
+  }
+  const TYPEN = {
+    quelle() {
+      return wahl("quelle", "Ein Video nennt keine Quelle. Was machst du zuerst?",
+        "Ich suche, ob Nachrichtenseiten dasselbe berichten.",
+        ["Ich teile es zur Sicherheit.", "Ich zähle die Likes.", "Ich frage in den Kommentaren, ob es stimmt."],
+        "Stimmt eine große Nachricht, berichten mehrere Nachrichtenseiten darüber.");
+    },
+    aufrufe() {
+      return wahl("aufrufe", "Ein Video hat zwei Millionen Aufrufe. Was sagt das über den Inhalt?",
+        "Nichts. Viele Aufrufe machen ein Video nicht wahr.",
+        ["Es muss stimmen, sonst hätten es nicht so viele gesehen.", "Es wurde von der Plattform geprüft.", "Es stammt von einer Behörde."],
+        "Aufrufe zeigen nur, dass viele Menschen das Video gesehen haben.");
+    },
+    draengen() {
+      return wahl("draengen", "Wozu dient dieser Satz?",
+        "Er soll dich drängen, ohne Nachdenken zu teilen.",
+        ["Er beweist, dass das Video geheim ist.", "Er zeigt, dass das Video bald gelöscht wird.", "Er ist eine Warnung der Plattform."],
+        "Wer drängt, will nicht, dass du erst prüfst.", "„Schnell weiterschicken, morgen ist das Video weg!“");
+    },
+    echterTeil() {
+      return wahl("echterTeil", "Ein Video zeigt einen echten Zeitungsartikel über eine Feuerwehrübung. Dazu steht: „Die Stadt wird evakuiert.“ Was stimmt?",
+        "Der Artikel ist echt, der Satz dazu ist erfunden.",
+        ["Alles stimmt, weil der Artikel echt ist.", "Alles ist erfunden, auch der Artikel.", "Das lässt sich nie herausfinden."],
+        "Ein echter Teil macht nicht das ganze Video wahr.");
+    },
+    werWeiss() {
+      return wahl("werWeiss", "Wer weiß am ehesten, ob in deiner Stadt der Strom abgeschaltet wird?",
+        "die Stadtwerke oder der Netzbetreiber",
+        ["ein Kanal mit vielen Followern", "eine Zeichentrickserie", "der Kommentar mit den meisten Likes"],
+        "Frag dich immer: Woher kann die Person das wissen?");
+    },
+    andere() {
+      return wahl("andere", "Unter einem Video steht: „Das sagen doch alle!“ Wie prüfst du, was andere wirklich sagen?",
+        "Ich suche das Thema selbst und lese zwei verschiedene Seiten.",
+        ["Ich lese die ersten zehn Kommentare.", "Ich schaue das Video noch einmal an.", "Ich schaue weitere Videos vom gleichen Kanal."],
+        "Kommentare und der gleiche Kanal sind keine zweite Quelle.");
+    },
+    gesetz() {
+      return wahl("gesetz", "Ein Kanal meldet jeden Tag ein neues Gesetz, heute: „Jogginghosen ab Montag verboten.“ Wo würde ein echtes Gesetz stehen?",
+        "in den Nachrichten und auf Seiten der Regierung",
+        ["nur auf diesem Kanal", "in den Kommentaren", "in einer Sprachnachricht von Freunden"],
+        "Über neue Gesetze berichten viele Medien. Steht etwas nur auf einem Kanal, ist es meist erfunden.");
+    },
+    angst() {
+      return wahl("angst", "Ein Video macht dir Angst. Was ist ein guter nächster Schritt?",
+        "Erst prüfen, dann entscheiden, ob ich es teile.",
+        ["Sofort an alle weiterschicken.", "Das Handy ausschalten und nie wieder nachsehen.", "Dem Kanal folgen, um nichts zu verpassen."],
+        "Angst ist ein Grund, genauer hinzusehen, nicht schneller zu teilen.");
+    },
+    datum() {
+      return wahl("datum", "Ein Video sagt für einen bestimmten Tag eine Katastrophe voraus. Was ist an einem genauen Datum praktisch?",
+        "Am Tag danach sieht jeder, ob es gestimmt hat.",
+        ["Ein genaues Datum beweist, dass es stimmt.", "Ein genaues Datum kann nur eine Behörde nennen.", "Dann lässt sich die Katastrophe verschieben."],
+        "Eine Vorhersage mit Datum lässt sich überprüfen. Viele solche Tage sind schon ohne Katastrophe vergangen.");
+    },
+    kiVideo() {
+      return wahl("kiVideo", "Ein Video wurde mit KI gemacht. Ist der Inhalt deshalb falsch?",
+        "Nicht unbedingt. Es kommt darauf an, ob der Inhalt stimmt.",
+        ["Ja, KI-Videos sind immer gelogen.", "Nein, KI-Videos sind immer geprüft.", "Ja, KI-Videos sind verboten."],
+        "Wie ein Video gemacht wurde, sagt noch nicht, ob es stimmt. Prüfen musst du trotzdem.");
+    }
+  };
+
+  let plan = [], letzteI = -1;
+  const cfg = {
+    titel: "Stimmt das?",
+    anzahl: 10,
+    erzeuge(i) {
+      if (i === 0 && letzteI !== 0) plan = U.mische(Object.keys(TYPEN));
+      letzteI = i;
+      const a = TYPEN[plan[i]](); a.art = plan[i]; return a;
+    }
+  };
+  window.__test = { TYPEN, cfg };
+  U.runde(cfg);
+})();
+</script>
+</body>
+</html>
