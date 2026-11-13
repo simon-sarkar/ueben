@@ -1,0 +1,35 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Rechtwinklig oder nicht?</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* kleine Zahlen, im Kopf oder mit dem Taschenrechner; die Zuordnung wird gerechnet, nicht von Hand gesetzt */
+  const JA = [[6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17], [12, 16, 20], [10, 24, 26], [7, 24, 25]];
+  const NEIN = [[5, 6, 8], [7, 9, 12], [6, 9, 11], [8, 10, 13], [9, 10, 14], [5, 11, 12], [4, 7, 8], [6, 7, 9], [10, 12, 16]];
+  const PLAN = [1, 0, 0, 1, 0, 1];                       /* 1 = rechtwinklig */
+  U.runde({
+    endlos: true, titel: "Rechtwinklig oder nicht?", anzahl: PLAN.length,
+    erzeuge(i) {
+      const t = U.wahl(PLAN[i] ? JA : NEIN), [a, b, c] = t, s = U.mische(t), ja = a * a + b * b === c * c;
+      return { key: t.join("-"), typ: "wahl", frage: `Ein Dreieck hat die Seiten ${s.map(x => x + "&nbsp;cm").join(", ").replace(/, ([^,]*)$/, " und $1")}. Ist es rechtwinklig?`,
+        optionen: ["ja, rechtwinklig", "nein"], richtig: ja ? 0 : 1, spalten: 2, kurz: `Seiten ${s.join(" cm, ")} cm`,
+        weg: `Die längste Seite ist ${c}&nbsp;cm.<br>(${a}&nbsp;cm)² + (${b}&nbsp;cm)² = ${a * a}&nbsp;cm² + ${b * b}&nbsp;cm² = ${a * a + b * b}&nbsp;cm²<br>(${c}&nbsp;cm)² = ${c * c}&nbsp;cm²<br>${a * a + b * b}&nbsp;cm² ${ja ? "=" : "≠"} ${c * c}&nbsp;cm², also ${ja ? "rechtwinklig" : "nicht rechtwinklig"}.` };
+    }
+  });
+})();
+</script>
+</body>
+</html>

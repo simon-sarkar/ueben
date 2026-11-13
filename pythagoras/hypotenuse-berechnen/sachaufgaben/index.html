@@ -1,0 +1,23 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Sachaufgaben</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  U.runde({ titel: "Sachaufgaben", anzahl: H.SACH.length, erzeuge: i => H.sach(H.SACH[i % H.SACH.length]) });
+})();
+</script>
+</body>
+</html>

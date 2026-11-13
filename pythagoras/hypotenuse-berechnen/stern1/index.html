@@ -1,0 +1,37 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hypotenuse berechnen ★</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  const d = U.de;
+  U.runde({
+    endlos: true, titel: "Hypotenuse berechnen ★", anzahl: 8,
+    erzeuge(i) {
+      const t = U.wahl(H.GLATT), [a, b] = Math.random() < .5 ? [t[0], t[1]] : [t[1], t[0]], c = t[2], s = a * a + b * b;
+      const lang = i < 4;                                 /* die ersten vier mit allen Zwischenschritten */
+      const schritte = lang
+        ? [{ text: `(${a}&nbsp;cm)² =`, loesung: a * a, einheit: "cm²" }, { text: `(${b}&nbsp;cm)² =`, loesung: b * b, einheit: "cm²" },
+           { text: `${a * a}&nbsp;cm² + ${b * b}&nbsp;cm² =`, loesung: s, einheit: "cm²" }, { text: `√${s}&nbsp;cm² =`, loesung: c, einheit: "cm" }]
+        : [{ text: "c² =", loesung: s, einheit: "cm²" }, { text: "c =", loesung: c, einheit: "cm" }];
+      return { key: t.join("-"), typ: "schritte", schritte, bild: H.dreieck(a, b, ["a", "b", "c"], "cm", 2, { farbe: true }),
+        frage: lang ? "Berechne die Hypotenuse c Schritt für Schritt.<br><b>a² + b² = c²</b>" : "Berechne erst c² und dann die Hypotenuse c.",
+        kurz: `Katheten ${a} cm und ${b} cm`, loesungText: `c&nbsp;=&nbsp;${c}&nbsp;cm`, weg: H.weg(a, b, "cm") };
+    }
+  });
+})();
+</script>
+</body>
+</html>

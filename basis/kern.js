@@ -231,6 +231,10 @@
       if (aufg.typ === "wahl") h += `<div class="wahl${aufg.spalten === 2 ? " zwei-spalten" : ""}">` + aufg.optionen.map((o, i) => `<button type="button" data-i="${i}">${o}</button>`).join("") + "</div>";
       if (aufg.typ === "zahl") h += `<form class="eingabe" autocomplete="off"><input inputmode="decimal" enterkeyhint="done" aria-label="Antwort" placeholder="?">${aufg.einheit ? `<span class="einheit">${aufg.einheit}</span>` : ""}<button class="knopf" type="submit">${L.pruefen}</button></form>`;
       if (aufg.typ === "text") h += `<form class="eingabe" autocomplete="off"><input class="textfeld" type="text" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="Antwort" placeholder="${aufg.hinweis || ""}" style="width:100%"><button class="knopf" type="submit">${L.pruefen}</button></form>`;
+      /* Schritte: mehrere Eingaben nacheinander (aufg.schritte = [{text, loesung, einheit, toleranz}]); die nächste Zeile
+         erscheint nach dem Prüfen, bei einem Fehler steht der richtige Wert daneben, damit es weitergeht */
+      if (aufg.typ === "schritte") h += `<div class="schritte">` + aufg.schritte.map((s, i) =>
+        `<form class="eingabe schritt${i ? " versteckt" : ""}" autocomplete="off"><span class="vor">${s.text}</span><span class="feld"><input inputmode="decimal" enterkeyhint="done" aria-label="Schritt ${i + 1}" placeholder="?">${s.einheit ? `<span class="einheit">${s.einheit}</span>` : ""}</span><button class="knopf" type="submit">${L.pruefen}</button><span class="schritt-rueck"></span></form>`).join("") + `</div>`;
       h += `<div class="rueck versteckt"></div><div class="unten versteckt"><button class="knopf" type="button" data-weiter>${L.weiter}</button></div></div>`;
       ziel.innerHTML = h;
       const b = ziel.querySelector("[data-beenden]"); if (b) b.onclick = () => { ende(); window.scrollTo(0, 0); };
@@ -263,6 +267,23 @@
           werte(loes.some(x => U.textGleich(inp.value, x)), U.esc(inp.value.trim()));
         };
       }
+      if (aufg.typ === "schritte") {
+        const fs = [...karte.querySelectorAll("form.schritt")], geg = []; let alle = true;
+        const fokus = f => setTimeout(() => f.querySelector("input").focus({ preventScroll: true }), 50);
+        fokus(fs[0]);
+        fs.forEach((f, i) => f.onsubmit = e => {
+          e.preventDefault();
+          const inp = f.querySelector("input"), s = aufg.schritte[i], v = U.zahl(inp.value);
+          if (inp.disabled) return;
+          if (isNaN(v)) { inp.value = ""; inp.placeholder = L.zahl; return; }
+          const ok = U.gleich(v, s.loesung, s.toleranz);
+          inp.disabled = true; f.querySelector("button").classList.add("versteckt");
+          inp.classList.add(ok ? "ok" : "falsch"); geg.push(U.de(v));
+          if (!ok) { alle = false; f.querySelector(".schritt-rueck").innerHTML = `${L.richtig}: <b>${U.de(s.loesung)}${s.einheit ? " " + s.einheit : ""}</b>`; }
+          if (i + 1 < fs.length) { fs[i + 1].classList.remove("versteckt"); fokus(fs[i + 1]); }
+          else werte(alle, geg.join(" · "));
+        });
+      }
       if (aufg.typ === "tipp") karte.querySelectorAll("[data-wahl]").forEach(el => el.addEventListener("click", () => {
         if (karte.dataset.fertig) return;
         const ok = el.dataset.wahl === String(aufg.richtig);
@@ -273,8 +294,10 @@
         karte.dataset.fertig = "1";
         if (endlos) { ea++; if (ok) er++; } else if (ok) richtig++;
         if (!ok && !endlos) fehler.push({ frage: aufg.kurz || aufg.frage, gegeben, loesung: aufg.loesungText || (aufg.typ === "wahl" ? aufg.optionen[aufg.richtig] : aufg.typ === "zahl" ? U.de(aufg.loesung) + (aufg.einheit ? " " + aufg.einheit : "") : aufg.typ === "text" ? [].concat(aufg.loesung)[0] : aufg.richtig) });
+        /* Lobwort mit freiem Zufall: mit dem festen Zufall würde jede richtige Antwort die Folge verschieben,
+           und die nächsten Aufgaben wären nicht mehr für alle gleich */
         const r = karte.querySelector(".rueck"); r.classList.remove("versteckt"); r.classList.add(ok ? "ok" : "falsch");
-        r.innerHTML = (ok ? U.wahl(L.ok) : L.falsch) + (aufg.weg ? `<div class="weg">${aufg.weg}</div>` : "");
+        r.innerHTML = (ok ? L.ok[Math.floor(NATIV() * L.ok.length)] : L.falsch) + (aufg.weg ? `<div class="weg">${aufg.weg}</div>` : "");
         ziel.querySelector(".punkte").textContent = stand();
         const u = karte.querySelector(".unten"); u.classList.remove("versteckt");
         const w = u.querySelector("[data-weiter]"); w.focus({ preventScroll: true }); w.onclick = () => { nr++; zeige(); window.scrollTo(0, 0); };

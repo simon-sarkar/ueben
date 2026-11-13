@@ -1,0 +1,45 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fehler finden</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; } .wahl button { text-align: left; font-family: var(--kopf); }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* je Aufgabe eine Rechnung mit genau einem falschen Schritt; die Zeilen danach rechnen mit dem falschen Wert richtig weiter */
+  const A = [
+    { a: 6, b: 8, z: ["(6 cm)² + (8 cm)² = c²", "36 cm² + 64 cm² = c²", "100 cm² = c²", "c = 100 cm"], f: 3,
+      weg: "Die Wurzel fehlt: c = √100&nbsp;cm² = <b>10&nbsp;cm</b>" },
+    { a: 5, b: 12, z: ["(5 cm)² + (12 cm)² = c²", "10 cm² + 24 cm² = c²", "34 cm² = c²", "c ≈ 5,83 cm"], f: 1,
+      weg: "(5&nbsp;cm)² heißt 5&nbsp;cm · 5&nbsp;cm = 25&nbsp;cm², nicht 5 · 2. Genauso ist (12&nbsp;cm)² = 144&nbsp;cm².<br>25&nbsp;cm² + 144&nbsp;cm² = 169&nbsp;cm²<br>c = √169&nbsp;cm² = <b>13&nbsp;cm</b>" },
+    { a: 9, b: 12, z: ["(9 cm)² + (12 cm)² = c²", "81 cm² + 144 cm² = c²", "215 cm² = c²", "c ≈ 14,66 cm"], f: 2,
+      weg: "81&nbsp;cm² + 144&nbsp;cm² = 225&nbsp;cm², nicht 215&nbsp;cm².<br>c = √225&nbsp;cm² = <b>15&nbsp;cm</b>" },
+    { a: 8, b: 15, z: ["8 cm + 15 cm = c²", "23 cm = c²", "c ≈ 4,80 cm"], f: 0,
+      weg: "Beim Einsetzen fehlen die Quadrate: (8&nbsp;cm)² + (15&nbsp;cm)² = c².<br>64&nbsp;cm² + 225&nbsp;cm² = 289&nbsp;cm²<br>c = √289&nbsp;cm² = <b>17&nbsp;cm</b>" },
+    { a: 12, b: 16, z: ["(12 cm)² + (16 cm)² = c²", "144 cm² + 256 cm² = c²", "400 cm² = c²", "c = 200 cm"], f: 3,
+      weg: "Wurzel ziehen heißt nicht halbieren: c = √400&nbsp;cm² = <b>20&nbsp;cm</b>" },
+    { a: 20, b: 21, z: ["(20 cm)² + (21 cm)² = c²", "400 cm² + 421 cm² = c²", "821 cm² = c²", "c ≈ 28,65 cm"], f: 1,
+      weg: "(21&nbsp;cm)² = 441&nbsp;cm², nicht 421&nbsp;cm².<br>400&nbsp;cm² + 441&nbsp;cm² = 841&nbsp;cm²<br>c = √841&nbsp;cm² = <b>29&nbsp;cm</b>" }
+  ];
+  U.runde({
+    titel: "Fehler finden", anzahl: A.length,
+    erzeuge(i) {
+      const t = A[i % A.length];
+      return { key: "f" + i, typ: "wahl", frage: `Die Katheten sind a&nbsp;=&nbsp;${t.a}&nbsp;cm und b&nbsp;=&nbsp;${t.b}&nbsp;cm. Gesucht ist die Hypotenuse c.<br><b>In welcher Zeile wurde falsch gerechnet?</b>`,
+        optionen: t.z.map(x => x.replace(/ (cm²?)/g, "&nbsp;$1")), richtig: t.f, kurz: `Katheten ${t.a}&nbsp;cm und ${t.b}&nbsp;cm: Wo steckt der Fehler?`, loesungText: `in der Zeile „${t.z[t.f].replace(/ (cm²?)/g, "&nbsp;$1")}“`, weg: t.weg };
+    }
+  });
+})();
+</script>
+</body>
+</html>

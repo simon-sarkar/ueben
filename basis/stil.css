@@ -69,6 +69,15 @@ h1 { font-size: 1.5em; } h2 { font-size: 1.25em; }
 .eingabe .einheit { font-weight: 600; color: var(--muted); }
 
 /* Rückmeldung */
+.schritte { display: grid; gap: 10px; }
+.schritt { gap: 8px; }
+.schritt .vor { font-family: var(--kopf); font-weight: 600; font-size: 1.05em; min-width: 5.4em; white-space: nowrap; }
+.schritt input { width: 4.4em; padding: 8px 10px; }
+.schritt .feld { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.schritt input.ok { border-color: var(--ok); color: var(--ok); opacity: 1; -webkit-text-fill-color: var(--ok); }
+.schritt input.falsch { border-color: var(--bad); color: var(--bad); opacity: 1; -webkit-text-fill-color: var(--bad); text-decoration: line-through; }
+.schritt-rueck { flex-basis: 100%; color: var(--bad); font-size: .95em; }
+.schritt-rueck:empty { display: none; }
 .rueck { margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-weight: 600; }
 .rueck.ok { background: var(--okbg); color: var(--ok); }
 .rueck.falsch { background: var(--badbg); color: var(--bad); }

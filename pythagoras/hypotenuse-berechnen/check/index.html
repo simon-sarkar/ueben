@@ -1,0 +1,96 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Teste dich</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  const d = U.de;
+  const WINKEL = [[50, 60, 70], [90, 35, 55], [115, 40, 25], [30, 75, 75], [90, 45, 45], [130, 25, 25], [60, 60, 60], [90, 20, 70], [95, 45, 40], [80, 55, 45]];
+  const SEITEN = { gleichseitig: [[6, 6, 6], [4, 4, 4], [9, 9, 9]], gleichschenklig: [[5, 5, 8], [7, 4, 7], [6, 9, 6], [10, 7, 7]], allgemein: [[4, 6, 7], [5, 7, 9], [6, 8, 11], [3, 5, 7]] };
+  const JA = [[6, 8, 10], [5, 12, 13], [9, 12, 15], [8, 15, 17], [12, 16, 20]], NEIN = [[5, 6, 8], [7, 9, 12], [6, 9, 11], [8, 10, 13], [9, 10, 14]];
+  const BUCH = "abcdefkmnpqrstuvwxyz".split("");
+  const und = l => l.join(", ").replace(/, ([^,]*)$/, " und $1");
+  const TYPEN = [
+    function winkelart() {
+      const w = U.wahl(WINKEL), m = Math.max(...w), r = m === 90 ? 1 : m > 90 ? 2 : 0;
+      return { key: "w" + w, typ: "wahl", frage: `Ein Dreieck hat die Winkel ${und(w.map(x => x + "°"))}. Wie heißt es nach seinen Winkeln?`,
+        optionen: ["spitzwinklig", "rechtwinklig", "stumpfwinklig"], richtig: r,
+        weg: r === 1 ? "Ein Winkel hat genau 90°." : r === 2 ? "Ein Winkel ist größer als 90°." : "Alle Winkel sind kleiner als 90°." };
+    },
+    function seitenart() {
+      const art = U.wahl(Object.keys(SEITEN)), s = U.wahl(SEITEN[art]), opt = ["gleichseitig", "gleichschenklig", "allgemein"];
+      return { key: "s" + s, typ: "wahl", frage: `Ein Dreieck hat die Seiten ${und(s.map(x => x + "&nbsp;cm"))}. Wie heißt es nach seinen Seiten?`,
+        optionen: opt, richtig: opt.indexOf(art),
+        weg: art === "gleichseitig" ? "Alle drei Seiten sind gleich lang." : art === "gleichschenklig" ? "Zwei Seiten sind gleich lang." : "Alle Seiten sind unterschiedlich lang." };
+    },
+    function beschriftung() {
+      const p = U.ausWinkeln(U.wahl([55, 65, 75]), U.wahl([45, 50, 60]), 10), e = U.wahl(["A", "B", "C"]);
+      const bild = U.dreieckSVG(p, {}, { ecken: { A: "A", B: "B", C: "C" }, breite: 300, hoehe: 200 });
+      if (Math.random() < .5) { const opt = ["a", "b", "c"]; return { key: "bs" + e, typ: "wahl", frage: `Wie heißt die Seite, die dem Eckpunkt ${e} gegenüberliegt?`, bild, optionen: opt,
+        richtig: opt.indexOf(e.toLowerCase()), spalten: 2, weg: `Gegenüber vom Eckpunkt ${e} liegt die Seite ${e.toLowerCase()}.` }; }
+      const opt = ["α", "β", "γ"], r = "ABC".indexOf(e);
+      return { key: "bw" + e, typ: "wahl", frage: `Wie heißt der Winkel am Eckpunkt ${e}?`, bild, optionen: opt, richtig: r, spalten: 2, weg: `Am Eckpunkt ${e} liegt der Winkel ${opt[r]}.` };
+    },
+    function flaeche() {
+      const g = U.ganz(5, 14), h = U.ganz(3, 11), A = g * h / 2;
+      return { key: "f" + g + "/" + h, typ: "zahl", frage: `Ein Dreieck hat die Grundlinie g = ${g}&nbsp;cm und die Höhe h = ${h}&nbsp;cm. Berechne den Flächeninhalt.`,
+        loesung: A, einheit: "cm²", kurz: `g = ${g} cm, h = ${h} cm`, weg: `A = g · h : 2 = ${g}&nbsp;cm · ${h}&nbsp;cm : 2 = <b>${d(A)}&nbsp;cm²</b>` };
+    },
+    function erkennen() {
+      const n = U.mische(BUCH).slice(0, 3), p = U.rechtwinklig(U.ganz(4, 9), U.ganz(4, 9), U.ganz(0, 359), Math.random() < .5);
+      const bild = U.dreieckSVG(p, { BC: n[0], CA: n[1], AB: n[2] }, { rechterWinkel: "C", breite: 300, hoehe: 210 }), opt = U.mische(n);
+      return { key: "h" + n.join(""), typ: "wahl", frage: "Welche Seite ist die Hypotenuse?", bild, optionen: opt, richtig: opt.indexOf(n[2]), spalten: 2,
+        kurz: "Hypotenuse erkennen", weg: `${n[2]} liegt dem rechten Winkel gegenüber und ist die längste Seite.` };
+    },
+    function gleichung() {
+      const n = U.mische(BUCH).slice(0, 3), p = U.rechtwinklig(U.ganz(4, 9), U.ganz(4, 9), U.ganz(0, 359), Math.random() < .5);
+      const bild = U.dreieckSVG(p, { BC: n[0], CA: n[1], AB: n[2] }, { rechterWinkel: "C", breite: 300, hoehe: 210 });
+      const h = U.hoch2, rich = `${h(n[0])} + ${h(n[1])} = ${h(n[2])}`, opt = U.mische([rich, `${h(n[0])} + ${h(n[2])} = ${h(n[1])}`, `${h(n[1])} + ${h(n[2])} = ${h(n[0])}`]);
+      return { key: "g" + n.join(""), typ: "wahl", frage: "Welche Gleichung stimmt für dieses Dreieck?", bild, optionen: opt, richtig: opt.indexOf(rich),
+        kurz: "Gleichung zum Dreieck", weg: `Kathete² + Kathete² = Hypotenuse²: ${rich}`, loesungText: rich };
+    },
+    function gilt() {
+      const w = U.wahl(WINKEL), ja = w.includes(90);
+      return { key: "p" + w, typ: "wahl", frage: `Ein Dreieck hat die Winkel ${und(w.map(x => x + "°"))}. Gilt in diesem Dreieck der Satz des Pythagoras?`,
+        optionen: ["ja", "nein"], richtig: ja ? 0 : 1, spalten: 2, weg: ja ? "Das Dreieck hat einen rechten Winkel, also gilt der Satz." : "Der Satz des Pythagoras gilt nur in rechtwinkligen Dreiecken." };
+    },
+    function pruefen() {
+      const ja = Math.random() < .5, t = U.wahl(ja ? JA : NEIN), [a, b, c] = t, s = U.mische(t);
+      return { key: "r" + t, typ: "wahl", frage: `Ein Dreieck hat die Seiten ${und(s.map(x => x + "&nbsp;cm"))}. Ist es rechtwinklig?`,
+        optionen: ["ja, rechtwinklig", "nein"], richtig: ja ? 0 : 1, spalten: 2, kurz: `Seiten ${s.join(" cm, ")} cm`,
+        weg: `(${a}&nbsp;cm)² + (${b}&nbsp;cm)² = ${a * a}&nbsp;cm² + ${b * b}&nbsp;cm² = ${a * a + b * b}&nbsp;cm²<br>(${c}&nbsp;cm)² = ${c * c}&nbsp;cm²<br>${a * a + b * b}&nbsp;cm² ${ja ? "=" : "≠"} ${c * c}&nbsp;cm², also ${ja ? "rechtwinklig" : "nicht rechtwinklig"}.` };
+    },
+    function glatt() {
+      const t = U.wahl(H.GLATT.concat(H.GROSS)), [a, b] = Math.random() < .5 ? [t[0], t[1]] : [t[1], t[0]];
+      return { key: "c" + t, typ: "zahl", frage: "Berechne die Länge der Hypotenuse c.", bild: H.dreieck(a, b, ["a", "b", "c"], "cm", 2), loesung: t[2], toleranz: 0.0051, einheit: "cm",
+        kurz: `Katheten ${a} cm und ${b} cm`, weg: H.weg(a, b, "cm") };
+    },
+    function rechteck() {
+      let l, b; do { l = U.ganz(6, 15); b = U.ganz(3, 9); } while (l <= b);
+      return { key: "d" + l + "-" + b, typ: "zahl", frage: `Ein Rechteck ist ${l}&nbsp;cm lang und ${b}&nbsp;cm breit. Wie lang ist die Diagonale?<br><span class="klein">${H.RUNDE}</span>`,
+        bild: H.rechteck(l, b, `${l} cm`, `${b} cm`), loesung: H.r2(H.hyp(l, b)), toleranz: 0.0051, einheit: "cm", loesungText: `${H.erg(l, b)}&nbsp;cm`, kurz: `Rechteck ${l} cm mal ${b} cm`, weg: H.weg(b, l, "cm", "d") };
+    },
+    function runden() {
+      let a, b; do { a = U.ganz(3, 12); b = U.ganz(4, 15); } while (a === b || H.glatt(a, b));
+      return { key: "t" + a + "-" + b, typ: "zahl", frage: `Ein rechtwinkliges Dreieck hat die Katheten ${a}&nbsp;cm und ${b}&nbsp;cm. Berechne die Hypotenuse.<br><span class="klein">${H.RUNDE}</span>`,
+        loesung: H.r2(H.hyp(a, b)), toleranz: 0.0051, einheit: "cm", loesungText: `${H.erg(a, b)}&nbsp;cm`, kurz: `Katheten ${a} cm und ${b} cm`, weg: H.weg(a, b, "cm") };
+    },
+    function sach() { return H.sach(U.wahl(H.SACH.slice(0, 6))); }
+  ];
+  U.runde({ endlos: true, titel: "Teste dich", anzahl: TYPEN.length, erzeuge: i => TYPEN[i % TYPEN.length]() });
+})();
+</script>
+</body>
+</html>

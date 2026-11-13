@@ -1,0 +1,33 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hypotenuse berechnen ★★</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  const d = U.de, EINH = ["cm", "cm", "cm", "m", "m", "m", "mm", "km"];
+  U.runde({
+    endlos: true, titel: "Hypotenuse berechnen ★★", anzahl: 8,
+    erzeuge(i) {
+      const j = i % 8, t = U.wahl(j < 3 ? H.GROSS : j < 6 ? H.DEZ : H.GLATT.concat(H.GROSS)), e = EINH[j];
+      const [a, b] = Math.random() < .5 ? [t[0], t[1]] : [t[1], t[0]], c = t[2];
+      const n = U.mische(U.wahl(H.NAMEN));               /* die Hypotenuse heißt nicht immer wie der letzte Buchstabe */
+      return { key: t.join("-"), typ: "zahl", frage: "Berechne die Länge der Hypotenuse.", bild: H.dreieck(a, b, n, e, 2),
+        loesung: c, toleranz: 0.0051, einheit: e, kurz: `Katheten ${d(a)} ${e} und ${d(b)} ${e}`, weg: H.weg(a, b, e, n[2]) };
+    }
+  });
+})();
+</script>
+</body>
+</html>

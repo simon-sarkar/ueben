@@ -1,0 +1,53 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Hypotenuse berechnen ★★★</title>
+<link rel="stylesheet" href="../../../basis/stil.css">
+<style>.werte { text-align: center; margin: 0 0 10px; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../../basis/kern.js"></script>
+<script src="../hyp.js"></script>
+<script>
+(function () {
+  "use strict";
+  const d = U.de, R = `<br><span class="klein">${H.RUNDE}</span>`;
+  /* Katheten, bei denen die Hypotenuse nicht glatt aufgeht */
+  function paar(min, max) { let a, b; do { a = U.ganz(min, max); b = U.ganz(min, max + 3); } while (a === b || H.glatt(a, b)); return [a, b]; }
+  function dez() { let a, b; do { a = U.ganz(12, 60) / 10; b = U.ganz(15, 80) / 10; } while (a === b || H.glatt(a, b) || Number.isInteger(a) || Number.isInteger(b)); return [a, b]; }
+  U.runde({
+    endlos: true, titel: "Hypotenuse berechnen ★★★", anzahl: 8,
+    erzeuge(i) {
+      const j = i % 8;
+      if (j < 3) {
+        const [a, b] = paar(3, 12), e = j === 2 ? "m" : "cm";
+        return { key: "t" + a + "-" + b, typ: "zahl", frage: `Ein rechtwinkliges Dreieck hat die Katheten ${a}&nbsp;${e} und ${b}&nbsp;${e}. Berechne die Hypotenuse.${R}`,
+          loesung: H.r2(H.hyp(a, b)), toleranz: 0.0051, einheit: e, loesungText: `${H.erg(a, b)}&nbsp;${e}`, kurz: `Katheten ${a} ${e} und ${b} ${e}`, weg: H.weg(a, b, e) };
+      }
+      if (j < 5) {
+        let l, b; do { l = U.ganz(6, 15); b = U.ganz(3, 9); } while (l <= b || H.glatt(l, b));
+        const e = j === 3 ? "cm" : "m";
+        return { key: "r" + l + "-" + b, typ: "zahl", frage: `Ein Rechteck ist ${l}&nbsp;${e} lang und ${b}&nbsp;${e} breit. Wie lang ist die Diagonale?${R}`,
+          bild: H.rechteck(l, b, `${l} ${e}`, `${b} ${e}`), loesung: H.r2(H.hyp(l, b)), toleranz: 0.0051, einheit: e, loesungText: `${H.erg(l, b)}&nbsp;${e}`, kurz: `Rechteck ${l} ${e} mal ${b} ${e}`,
+          weg: `Die Diagonale ist die Hypotenuse, Länge und Breite sind die Katheten.<br>${H.weg(b, l, e, "d")}` };
+      }
+      if (j === 5) {
+        const s = U.ganz(4, 12);
+        return { key: "q" + s, typ: "zahl", frage: `Ein Quadrat hat die Seitenlänge ${s}&nbsp;cm. Wie lang ist die Diagonale?${R}`,
+          bild: H.rechteck(s, s, `${s} cm`, `${s} cm`), loesung: H.r2(H.hyp(s, s)), toleranz: 0.0051, einheit: "cm", loesungText: `${H.erg(s, s)}&nbsp;${"cm"}`, kurz: `Quadrat mit Seitenlänge ${s} cm`,
+          weg: `Beide Katheten sind ${s} cm lang.<br>${H.weg(s, s, "cm", "d")}` };
+      }
+      const [a, b] = dez(), n = U.mische(U.wahl(H.NAMEN)), e = j === 6 ? "cm" : "m";
+      return { key: "d" + a + "-" + b, typ: "zahl", frage: `Berechne die Länge der Hypotenuse.${R}`, bild: H.dreieck(a, b, n, e, 2),
+        loesung: H.r2(H.hyp(a, b)), toleranz: 0.0051, einheit: e, loesungText: `${H.erg(a, b)}&nbsp;${e}`, kurz: `Katheten ${d(a)} ${e} und ${d(b)} ${e}`, weg: H.weg(a, b, e, n[2]) };
+    }
+  });
+})();
+</script>
+</body>
+</html>
