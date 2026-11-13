@@ -1,0 +1,105 @@
+@font-face { font-family: "Lexend"; src: url("../basis/lexend.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  /* Aufbau: links schmale Leiste mit allem zum Bedienen, rechts der Raum, der die restliche Fläche füllt. */
+  color-scheme: light;
+  --tinte: #10283a;
+  --tisch: #c0501a;
+  --tisch-leer: #f7e4d7;
+  --flaeche: #eef1f4;
+  --karte: #ffffff;
+  --linie: #c9d1d8;
+  --gedaempft: #4a5a68;
+  --warn: #9a1c1c;
+  --schrift: "Lexend", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--flaeche); color: var(--tinte); font-family: var(--schrift); font-weight: 600; font-size: 15px; line-height: 1.35; }
+
+.app { display: flex; height: 100%; }
+.leiste { width: 300px; flex: none; background: var(--karte); border-right: 2px solid var(--tinte); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 18px; }
+.leiste h1 { margin: 0; font-size: 26px; letter-spacing: .01em; }
+.leiste section { display: flex; flex-direction: column; gap: 8px; }
+.titel { font-size: 15px; }
+.klein { font-size: 13px; color: var(--gedaempft); }
+.hinweis { margin: 0; font-size: 12.5px; color: var(--gedaempft); font-weight: 600; }
+.stand { margin: 0; font-size: 13px; color: var(--gedaempft); }
+.warnung { margin: 0; font-size: 13px; color: var(--warn); border-left: 4px solid var(--warn); padding-left: 8px; overflow-wrap: anywhere; }
+.warnung[hidden] { display: none; }
+
+textarea, input[type="text"] { width: 100%; font: inherit; color: inherit; background: var(--karte); border: 2px solid var(--linie); border-radius: 6px; padding: 7px 9px; }
+textarea { resize: vertical; min-height: 120px; line-height: 1.4; }
+textarea:focus, input[type="text"]:focus { outline: none; border-color: var(--tinte); }
+
+.knopf { font: inherit; color: var(--tinte); background: var(--karte); border: 2px solid var(--tinte); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+.knopf:hover { background: var(--flaeche); }
+.knopf:focus-visible, .tisch:focus-visible, .pult:focus-visible, .schloss:focus-visible, .weg:focus-visible, .griff:focus-visible { outline: 3px solid #2f7de1; outline-offset: 2px; }
+.knopf.haupt { background: var(--tinte); color: #fff; font-size: 20px; padding: 12px; }
+.knopf.haupt:hover { background: #1b3d57; }
+.knopf.leise { border-color: var(--linie); color: var(--gedaempft); font-size: 13px; }
+.knopf.sicher { border-color: var(--warn); color: var(--warn); }
+.knopf[aria-pressed="true"] { background: var(--tinte); color: #fff; }
+.reihe { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.paar { display: flex; gap: 8px; }
+.paar input { flex: 1; min-width: 0; }
+.paar.umbruch { flex-wrap: wrap; }
+.paar.umbruch .knopf { flex: 1 1 auto; }
+.schalter { display: flex; }
+.schalter .knopf { flex: 1; }
+.schalter .knopf:first-child { border-radius: 6px 0 0 6px; border-right-width: 1px; }
+.schalter .knopf:last-child { border-radius: 0 6px 6px 0; border-left-width: 1px; }
+
+.buehne { flex: 1; min-width: 0; min-height: 0; padding: 16px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.halter { position: relative; background: var(--karte); border: 2px solid var(--tinte); border-radius: 4px; overflow: hidden; flex: none; }
+.raum { position: absolute; left: 0; top: 0; width: 1320px; height: 760px; transform-origin: 0 0; touch-action: none; user-select: none; -webkit-user-select: none; }
+
+.tisch { position: absolute; width: 116px; height: 58px; background: var(--tisch); border: 2px solid var(--tinte); color: #fff; display: flex; align-items: center; justify-content: center; text-align: center; padding: 2px 4px; cursor: grab; }
+.tisch.leer { background: var(--tisch-leer); cursor: default; }
+.tisch.fest { background: var(--tinte); }
+.tisch.leer.fest { background: repeating-linear-gradient(45deg, var(--tisch-leer) 0 8px, #e2c4b0 8px 16px); }
+.tisch.ziel { box-shadow: 0 0 0 4px #2f7de1; z-index: 3; }
+.tisch.zieht { z-index: 5; box-shadow: 0 6px 14px rgba(16, 40, 58, .35); cursor: grabbing; }
+.raum.tische .tisch, .raum.tische .pult { cursor: move; }
+.name { display: block; max-width: 100%; line-height: 1.08; overflow-wrap: anywhere; font-size: 23px; pointer-events: none; }
+.name.g2 { font-size: 20px; }
+.name.g3 { font-size: 17px; }
+.name.g4 { font-size: 14px; }
+.name.g5 { font-size: 12.5px; }
+
+.schloss, .weg { position: absolute; top: 1px; right: 1px; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: rgba(255, 255, 255, .28); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font: inherit; font-size: 15px; line-height: 1; }
+.schloss svg { width: 13px; height: 13px; fill: currentColor; stroke: currentColor; }
+.schloss:hover, .weg:hover { background: rgba(255, 255, 255, .55); }
+.tisch.leer .schloss, .tisch.leer .weg { color: var(--tinte); background: rgba(16, 40, 58, .12); }
+.tisch.fest .schloss { background: #fff; color: var(--tinte); }
+
+.griff { position: absolute; width: 18px; height: 30px; padding: 0; border: 2px solid #fff; border-radius: 9px; background: var(--tinte); cursor: move; z-index: 4; touch-action: none; }
+.griff.quer { width: 30px; height: 18px; }
+
+.pult { position: absolute; width: 334px; height: 70px; background: var(--tisch); border: 2px solid var(--tinte); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; padding: 0 8px; overflow: hidden; white-space: nowrap; }
+
+.geist { position: fixed; z-index: 20; transform: translate(-50%, -50%); background: var(--tinte); color: #fff; border: 2px solid #fff; border-radius: 6px; padding: 6px 12px; font-size: 18px; pointer-events: none; box-shadow: 0 6px 14px rgba(16, 40, 58, .35); }
+
+@media (max-width: 899px) {
+  html, body { height: auto; }
+  .app { flex-direction: column-reverse; height: auto; }
+  .leiste { width: auto; border-right: 0; border-top: 2px solid var(--tinte); overflow: visible; }
+  .buehne { padding: 16px; }
+}
+
+/* Mit Maus: Schloss und Kreuz erst beim Zeigen auf den Tisch, damit Namen frei stehen. Am Touch-Bildschirm immer da. */
+@media (hover: hover) {
+  .tisch:not(.fest) .schloss, .weg { opacity: 0; }
+  .tisch:hover .schloss, .tisch:hover .weg, .schloss:focus-visible, .weg:focus-visible { opacity: 1; }
+}
+
+@media print {
+  .leiste, .schloss, .weg, .griff { display: none; }
+  body, .tisch, .pult { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .tisch { transition: box-shadow .12s; }
+}

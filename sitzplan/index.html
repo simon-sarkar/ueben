@@ -1,0 +1,68 @@
+<!doctype html>
+<html translate="no" lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>Sitzplan</title>
+<link rel="stylesheet" href="sitzplan.css">
+</head>
+<body>
+<div class="app">
+  <aside class="leiste" aria-label="Einstellungen">
+    <h1>Sitzplan</h1>
+
+    <section>
+      <label class="titel" for="namen">Namen</label>
+      <textarea id="namen" rows="10" spellcheck="false" autocomplete="off" placeholder="Ein Name pro Zeile"></textarea>
+      <p id="stand" class="stand" aria-live="polite"></p>
+      <p id="ohne" class="warnung" hidden></p>
+    </section>
+
+    <section>
+      <button type="button" id="wuerfeln" class="knopf haupt">Würfeln</button>
+      <form id="seedform" class="reihe">
+        <label class="klein" for="seed">Startwert (Seed)</label>
+        <div class="paar">
+          <input id="seed" type="text" maxlength="30" autocomplete="off" spellcheck="false" placeholder="z. B. 4711">
+          <button type="submit" class="knopf">Anwenden</button>
+        </div>
+      </form>
+      <p class="hinweis">Gleiche Namen, gleiche Tische und gleicher Startwert ergeben wieder denselben Plan.</p>
+    </section>
+
+    <section>
+      <span class="titel" id="modus-titel">Ziehen bewegt</span>
+      <div class="schalter" role="group" aria-labelledby="modus-titel">
+        <button type="button" id="modus-namen" class="knopf" aria-pressed="true">Namen</button>
+        <button type="button" id="modus-tische" class="knopf" aria-pressed="false">Tische</button>
+      </div>
+      <p id="modus-hilfe" class="hinweis"></p>
+      <div class="paar umbruch">
+        <button type="button" id="frei" class="knopf">Alle Schlösser öffnen</button>
+        <button type="button" id="plus" class="knopf">Tisch dazu</button>
+      </div>
+    </section>
+
+    <section>
+      <label class="klein" for="pult">Beschriftung Pult</label>
+      <input id="pult" type="text" maxlength="30" autocomplete="off">
+      <div class="paar umbruch">
+        <button type="button" id="zurueck" class="knopf leise">Tische wie am Anfang</button>
+        <button type="button" id="loeschen" class="knopf leise">Alles löschen</button>
+      </div>
+      <p class="hinweis">Namen und Plan bleiben nur in diesem Browser auf diesem Gerät. Die Seite überträgt nichts.</p>
+    </section>
+  </aside>
+
+  <main class="buehne" id="buehne">
+    <div class="halter" id="halter">
+      <div class="raum" id="raum"></div>
+    </div>
+  </main>
+</div>
+<script src="sitzplan.js"></script>
+</body>
+</html>
