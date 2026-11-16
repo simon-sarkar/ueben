@@ -1,0 +1,109 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="tinte">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Welcher Account?</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>
+  /* Einzelne Seite ohne Übersicht: der Knopf „Zurück zur Auswahl“ hätte kein Ziel */
+  .knoepfe-mehr a.knopf { display: none; }
+  .nb { white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* Zehn feste Fragen zu den Accountarten. Die Seite richtet sich an Erwachsene, deshalb die Anrede „Sie“. */
+  U.TEXTE.de.ok = ["Richtig.", "Stimmt.", "Genau."];
+  U.TEXTE.de.nochmal = "Das lohnt einen zweiten Blick:";
+  U.TEXTE.de.deine = "Ihre Antwort";
+
+  function wahl(key, frage, richtig, falsch, weg) {
+    const opt = U.mische([richtig].concat(falsch));
+    return { key, typ: "wahl", frage, optionen: opt, richtig: opt.indexOf(richtig), weg };
+  }
+  const nb = t => `<span class="nb">${t}</span>`;   /* kein Umbruch am Bindestrich */
+  const KONTEN = ["Verwaltungsaccount (@muenchen.de)", nb("m-Bildung-Account"), "ByCS-Account", "musin-Account"];
+  const ohne = k => KONTEN.filter(x => x !== k);
+
+  const TYPEN = {
+    puk() {
+      return wahl("puk", "Für welchen Account sollten Sie die PUK sicher aufbewahren?",
+        KONTEN[0], ohne(KONTEN[0]),
+        "Ohne regelmäßige Anmeldung wird der Verwaltungsaccount deaktiviert. Halten Sie für diesen Fall die PUK bereit.");
+    },
+    inaktiv() {
+      return wahl("inaktiv", "Jemand meldet sich monatelang nicht mit dem Verwaltungsaccount an. Was passiert?",
+        "Der Account wird deaktiviert und 90 Tage später gelöscht.",
+        ["Der Account bleibt unbegrenzt aktiv.", "Der Account wird sofort gelöscht.", "Der Account geht an die Schulleitung über."],
+        "Deaktivierte Accounts stellen Sie gemeinsam mit Schulleitung und Servicedesk wieder her.");
+    },
+    schulwechsel() {
+      return wahl("schulwechsel", "Eine Lehrkraft wechselt die Schule. Was passiert mit ihrer Adresse @muenchen.de?",
+        "Die Adresse bleibt bestehen.",
+        ["Die Adresse wird gelöscht und neu angelegt.", "Die Adresse bekommt den Namen der neuen Schule.", "Die Lehrkraft bekommt zusätzlich eine zweite Adresse."],
+        "Die Adresse wird zentral von der Stadt München verwaltet.");
+    },
+    office() {
+      return wahl("office", "Wofür brauchen Sie den Office-365-Account (@o365.musin.de)?",
+        "für die Office-Programme im Verwaltungsnetz",
+        ["für die Anmeldung an den pädagogischen Rechnern", "für Tickets beim Servicedesk", "für die ByCS-Administration"],
+        "Beim Anlegen des Accounts gehen die Zugangsdaten an die Adresse @muenchen.de. Dorthin geht auch ein zurückgesetztes Passwort.");
+    },
+    jaehrlich() {
+      return wahl("jaehrlich", "Wie oft müssen Sie das Passwort Ihres m-Bildung-Accounts ändern?",
+        "einmal im Jahr",
+        ["alle drei Monate", "gar nicht", "bei jedem Schulwechsel"],
+        "Beim m-Bildung-Account ist die Passwortänderung jedes Jahr fällig. Das Postfach dazu erreichen Sie im Browser unter mail.m-bildung.de.");
+    },
+    servicedesk() {
+      return wahl("servicedesk", "Über welchen Account läuft der Mailkontakt mit dem Servicedesk?",
+        KONTEN[1], ohne(KONTEN[1]),
+        "Der m-Bildung-Account ist der einzige Mailweg zum Servicedesk.");
+    },
+    ticket() {
+      return wahl("ticket", "Sie wollen ein Ticket in ServiceNow eröffnen. Welchen Account brauchen Sie dafür?",
+        KONTEN[1], ohne(KONTEN[1]),
+        "Dazu kommt der YubiKey: Für ServiceNow ist eine Zwei-Faktor-Authentifizierung nötig.");
+    },
+    bycsPasswort() {
+      return wahl("bycsPasswort", "Müssen Sie das Passwort Ihres ByCS-Accounts regelmäßig ändern?",
+        `Nein, aber für die Mail und das persönliche Profil gilt ${nb("MFA-Pflicht")}.`,
+        ["Ja, einmal im Jahr.", "Ja, alle drei Monate.", "Ja, bei jedem Schulwechsel."],
+        "MFA heißt Multi-Faktor-Authentifizierung: Zum Passwort kommt ein zweiter Nachweis.");
+    },
+    bycsWechsel() {
+      return wahl("bycsWechsel", "Eine Lehrkraft wechselt die Dienststelle. Was passiert mit ihrem ByCS-Account?",
+        "Der Account bleibt, die Inhalte werden gelöscht.",
+        ["Account und Inhalte ziehen mit um.", "Der Account wird gelöscht und neu angelegt.", "Es ändert sich nichts."],
+        "Gelöscht werden Mails, Kontakte, Kalender, Drive und Messenger. Sichern Sie diese Inhalte vorher. Den Wechsel beantragt die Lehrkraft an der neuen Schule, die ByCS-Admins dort nehmen ihn an.");
+    },
+    musin() {
+      return wahl("musin", "Mit welchem Account melden sich Lehrkräfte und Schüler an den pädagogischen Rechnern an?",
+        KONTEN[3], ohne(KONTEN[3]),
+        "Der musin-Account ist der pädagogische Account für alle Schüler und alle Lehrkräfte. Der m-Bildung-Account ist für Mail, Portal und ServiceNow da.");
+    }
+  };
+
+  let plan = [], letzteI = -1;
+  const cfg = {
+    titel: "Welcher Account?",
+    anzahl: 10,
+    erzeuge(i) {
+      if (i === 0 && letzteI !== 0) plan = U.mische(Object.keys(TYPEN));
+      letzteI = i;
+      const a = TYPEN[plan[i]](); a.art = plan[i]; return a;
+    }
+  };
+  window.__test = { TYPEN, cfg };
+  U.runde(cfg);
+})();
+</script>
+</body>
+</html>
