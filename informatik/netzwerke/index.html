@@ -1,0 +1,92 @@
+<!doctype html>
+<html translate="no" lang="de" data-design="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="google" content="notranslate">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Netzwerke</title>
+<link rel="stylesheet" href="../../basis/stil.css">
+<style>.nb { white-space: nowrap; } .adr { overflow-wrap: anywhere; font-weight: 600; font-size: .9em; }</style>
+</head>
+<body>
+<main class="seite" id="app"></main>
+<script src="../../basis/kern.js"></script>
+<script>
+(function () {
+  "use strict";
+  /* 18 feste Fragen zu Client und Server, Topologien, IP-Adresse, URL und DNS, HTTP und HTTPS.
+     Reihenfolge wie im Unterricht; alle bekommen dieselben Fragen. Die Beispiele kommen auf den Folien nicht vor. */
+  function wahl(key, frage, richtig, falsch, weg) {
+    const opt = U.mische([richtig].concat(falsch));
+    return { key, typ: "wahl", frage, optionen: opt, richtig: opt.indexOf(richtig), weg };
+  }
+  const nb = t => `<span class="nb">${t}</span>`;
+  const FRAGEN = [
+    () => wahl("cs1", "Wer schickt den Request?",
+      "der Client", ["der Server", "der Switch", "der DNS-Server"],
+      "Der Client fragt (Request), der Server antwortet (Response)."),
+    () => wahl("cs2", "Du öffnest die Wetter-App. Wer ist der Server?",
+      "der Rechner des Wetterdienstes", ["dein Handy", "die Wetter-App", "dein Router"],
+      "Dein Handy mit der App ist der Client. Es fragt beim Server des Wetterdienstes an."),
+    () => wahl("cs3", "Was ist ein Thin Client?",
+      "ein Gerät, das selbst wenig macht",
+      ["ein besonders leistungsfähiger Rechner", "ein Server für Webseiten", "ein dünnes Netzwerkkabel"],
+      "Beim Thin Client rechnet und speichert der Server. Ein Thick Client erledigt vieles ohne den Server."),
+    () => wahl("cs4", "Welcher Server liefert Webseiten aus?",
+      "der Webserver", ["der Dateiserver", "der Druckserver", "der E-Mail-Server"],
+      "Server werden nach ihrer Aufgabe benannt."),
+    () => wahl("topo1", "Alle Geräte hängen an einem Switch in der Mitte. Welche Topologie ist das?",
+      "Stern", ["Bus", "Ring", "Vermaschung"],
+      "Beim Stern hängen alle Geräte an einem Zentrum, meist einem Switch oder Router."),
+    () => wahl("topo2", "Ein Kabel bricht. Bei welcher Topologie ist danach genau ein Gerät offline?",
+      "Stern", ["Bus", "Ring", "Vermaschung"],
+      "Beim Stern trifft ein Bruch nur das Gerät an diesem Kabel. Bei Bus und Ring sind alle offline, bei der Vermaschung keines."),
+    () => wahl("topo3", "Welchen Nachteil hat die Vermaschung?",
+      "Sie braucht sehr viele Kabel und ist teuer.",
+      ["Ein Bruch legt alles lahm.", "Es gibt Datenkollisionen.", "Fällt das Zentrum aus, sind alle offline."],
+      "Dafür ist die Vermaschung sehr ausfallsicher: Die Daten nehmen einen anderen Weg."),
+    () => wahl("topo4", "Bei welcher Topologie sind alle Geräte gleichberechtigt und es gibt keine Datenkollisionen?",
+      "Ring", ["Bus", "Stern", "Vermaschung"],
+      "Im Ring laufen die Daten im Kreis von Gerät zu Gerät. Der Nachteil: Ein Bruch legt alles lahm."),
+    () => wahl("ip1", "Welche IP-Adresse ist gültig?",
+      "172.16.8.40", ["192.168.1.256", "10.0.7", "192.300.4.1"],
+      "Eine IPv4-Adresse hat vier Zahlen von 0 bis 255, durch Punkte getrennt."),
+    () => wahl("ip2", "Welche Adresse ist privat?",
+      "192.168.178.33", ["91.12.44.7", "87.106.14.3", "172.40.2.9"],
+      `Privat sind ${nb("192.168. …")}, ${nb("10. …")} und ${nb("172.16. …")} bis ${nb("172.31. …")} Alle anderen Adressen sind öffentlich.`),
+    () => wahl("ip3", "Von wem bekommt dein Handy zu Hause seine IP-Adresse?",
+      "vom Router", ["vom Internetanbieter", "vom YouTube-Server", "vom Hersteller des Handys"],
+      "Der Router vergibt die privaten Adressen. Seine eigene öffentliche Adresse bekommt er vom Internetanbieter."),
+    () => wahl("ip4", "Du surfst zu Hause. Welche Adresse sieht der YouTube-Server?",
+      "die öffentliche Adresse des Routers",
+      ["die private Adresse deines Handys", "die Adresse des DNS-Servers", "gar keine Adresse"],
+      "Alle Geräte zu Hause teilen sich die öffentliche Adresse des Routers."),
+    () => wahl("url1", "Was macht das DNS?",
+      "Es übersetzt den Servernamen in die IP-Adresse.",
+      ["Es verschlüsselt die Daten.", "Es vergibt die privaten IP-Adressen.", "Es speichert die Webseiten."],
+      "Das DNS ist das Telefonbuch des Internets."),
+    () => wahl("url2", `<span class="adr">https://www.br.de/nachrichten</span><br>Welcher Teil ist der Pfad?`,
+      "/nachrichten", ["https://", "www.br.de", "br.de"],
+      "Eine URL besteht aus Protokoll (https://), Servername (www.br.de) und Pfad (/nachrichten)."),
+    () => wahl("url3", `<span class="adr">https://paypal.com.kontocheck.net/</span><br>Welche Domain hat diese Adresse?`,
+      "kontocheck.net", ["paypal.com", "paypal.com.kontocheck", "com.kontocheck"],
+      "Lies den Servernamen von rechts: erst die Endung, dann der Name. „paypal.com“ ist hier nur ein Zusatz davor."),
+    () => wahl("http1", "Der Webserver antwortet mit 404. Was heißt das?",
+      "Die Seite gibt es nicht.", ["Alles in Ordnung.", "Zugriff verboten.", "Fehler auf dem Webserver."],
+      "200 heißt alles in Ordnung, 403 Zugriff verboten, 500 Fehler auf dem Webserver."),
+    () => wahl("http2", "Wer kann bei HTTPS die Daten lesen?",
+      "nur Browser und Webserver", ["jeder auf dem Weg", "der Betreiber des WLANs", "niemand"],
+      "HTTPS verschlüsselt die Daten wie ein Brief im Umschlag. Bei HTTP kann jeder auf dem Weg mitlesen."),
+    () => wahl("http3", `Eine Adresse beginnt mit ${nb("https://")}. Was weißt du sicher?`,
+      "Unterwegs liest niemand mit.",
+      ["Die Seite ist echt.", "Die Seite gehört einer Firma.", "Die Seite speichert keine Daten."],
+      "Auch Betrüger benutzen HTTPS. Ob die Seite echt ist, zeigt die Domain.")
+  ];
+  const cfg = { titel: "Netzwerke", anzahl: FRAGEN.length, erzeuge: i => FRAGEN[i % FRAGEN.length]() };
+  window.__test = { FRAGEN, cfg };
+  U.runde(cfg);
+})();
+</script>
+</body>
+</html>
